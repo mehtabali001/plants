@@ -1,0 +1,317 @@
+ var base_url=$("#base_url").val();
+ var count = 2;
+    var limits = 500;
+        "use strict";
+    function addPurchaseOrderField1(divName){
+		var category=true;
+		$(".fld_product_id").each(function() {
+			console.log('value'+'===='+this.value);
+			if( this.value == ""){
+				category =false;
+			}
+            //isNaN(this.value) || 0 == this.value.length || (gr_tot += parseFloat(this.value))
+        });
+		if(category == true){
+		var products=$("#productSelect").html();
+        if (count == limits)  {
+            alert("You have reached the limit of adding " + count + " inputs");
+        }
+        else{
+            var newdiv = document.createElement('tr');
+            var tabin="product_id_"+count;
+             tabindex = count * 4 ,
+           newdiv = document.createElement("tr");
+            tab1 = tabindex + 1;
+            
+            tab2 = tabindex + 2;
+            tab3 = tabindex + 3;
+            tab4 = tabindex + 4;
+            tab5 = tabindex + 5;
+            tab6 = tab5 + 1;
+            tab7 = tab6 +1;
+           
+
+
+            newdiv.innerHTML ='<td class="span3 supplier"><select class="select2 form-control mb-3 custom-select fld_product_id" name="fld_product_id[]" onchange="product_category('+ count +');" id="product_id_'+ count +'" tabindex="'+tab1+'"><option value="">Select Product</option>'+products+'</select></td>  <td class="wt"> <input type="text" id="unit_code_'+ count +'" class="form-control text-center stock_ctn_'+ count +'" placeholder="Unit Code" readonly/> </td><td class="text-right"><input type="text" name="fld_quantity[]" tabindex="'+tab2+'" required  id="cartoon_'+ count +'" class="form-control text-right store_cal_' + count + '" onkeyup="calculate_store(' + count + ');" onchange="calculate_store(' + count + ');" placeholder="0.00" value="" min="0"/>  </td><td class="test"><input type="text" name="fld_unit_price[]" onkeyup="calculate_store('+ count +');" onchange="calculate_store('+ count +');" id="product_rate_'+ count +'" class="form-control product_rate_'+ count +' text-right" placeholder="0.00" value="" min="0" tabindex="'+tab3+'"/></td><td class="text-right"><input class="form-control total_price text-right total_price_'+ count +'" type="text" name="fld_total_amount[]" id="total_price_'+ count +'" value="0.00" readonly="readonly" /> </td><td><button style="text-align: right;" class="btn btn-danger red" type="button"  onclick="deleteRow(this)" tabindex="8"><i class="fas fa-times"></i></button></td>';
+            document.getElementById(divName).appendChild(newdiv);
+            document.getElementById(tabin).focus();
+            //document.getElementById("add_invoice_item").setAttribute("tabindex", tab5);
+            //document.getElementById("add_purchase").setAttribute("tabindex", tab6);
+			//document.getElementById("add_purchase_another").setAttribute("tabindex", tab7);
+           
+            count++;
+
+            $("select.form-control:not(.dont-select-me)").select2({
+                placeholder: "Select option",
+                allowClear: true
+            });
+        }
+		}else{
+			alert('Please select product category !');
+		}
+    }
+	function deleteRow(e) {
+        var t = $("#purchaseTable > tbody > tr").length;
+        if (1 == t) alert("There only one row you can't delete.");
+        else {
+            var a = e.parentNode.parentNode;
+            a.parentNode.removeChild(a)
+        }
+        calculateSum()
+    }
+	"use strict";
+    function product_category(sl) {
+		var supplier_id = $('#fld_supplier_id').val();
+		var product_unit = $("#product_id_"+sl).find(':selected').attr('data-unit')
+		$("#unit_code_"+sl).val(product_unit);
+		if ( supplier_id == 0) {
+			alert('Please select Supplier !');
+			
+			return false;
+		}
+	}
+	function purchase_function(div){
+		if(div == "supplierdiv"){
+			$("#supplierdiv").show();
+			$("#purchasediv").hide();
+		}
+		if(div == "purchasediv"){
+			$("#purchasediv").show();
+			$("#supplierdiv").hide();
+		}
+	}
+//Calculate Sum
+    "use strict";
+function calculateSum() {
+      var t = 0;
+
+         
+            //Total Price
+    $(".total_price").each(function () {
+        isNaN(this.value) || 0 == this.value.length || (t += parseFloat(this.value))
+    }),   
+    e = t.toFixed(2, 2);
+
+    var test = +e;
+    $("#fld_grand_total_amount").val(test.toFixed(2, 2));
+
+
+    var gt = $("#fld_grand_total_amount").val();
+    var grnt_totals = gt;
+    $("#fld_grand_total_amount").val(grnt_totals);
+
+    
+}
+ //Calculate store product
+        "use strict";
+    function calculate_store(sl) {
+       
+        var gr_tot = 0;
+        var item_ctn_qty    = $("#cartoon_"+sl).val();
+        var vendor_rate = $("#product_rate_"+sl).val();
+
+        var total_price     = item_ctn_qty * vendor_rate;
+        $("#total_price_"+sl).val(total_price.toFixed(2));
+
+        //Total Price
+        $(".total_price").each(function() {
+            isNaN(this.value) || 0 == this.value.length || (gr_tot += parseFloat(this.value))
+        });
+
+        //$("#Total").val(gr_tot.toFixed(2,2));
+        var grandtotal = gr_tot;
+        $("#fld_grand_total_amount").val(grandtotal.toFixed(2,2));
+    }
+	
+	  "use strict";
+      function bank_paymet(val){
+        if(val==2){
+           var style = ''; 
+            document.getElementById('fld_bank').setAttribute("required", true);
+			document.getElementById('bank_account').style.display = style;
+			style = 'none';
+			document.getElementById('fld_cheque_number').removeAttribute("required");
+			document.getElementById('cheque_number').style.display = style;
+			
+			document.getElementById('fld_cheque_date').removeAttribute("required");
+			document.getElementById('cheque_date').style.display = style;
+        }else if(val==3){
+		   var style = ''; 
+            document.getElementById('fld_bank').setAttribute("required", true);
+			document.getElementById('bank_account').style.display = style;
+			
+			document.getElementById('fld_cheque_number').setAttribute("required", true);
+			document.getElementById('cheque_number').style.display = style;
+			
+			document.getElementById('fld_cheque_date').setAttribute("required", true);
+			document.getElementById('cheque_date').style.display = style;
+		}else{
+		   var style ='none';
+			document.getElementById('fld_bank').removeAttribute("required");
+			document.getElementById('bank_account').style.display = style;
+			document.getElementById('fld_cheque_number').removeAttribute("required");
+			document.getElementById('cheque_number').style.display = style;
+			
+			document.getElementById('fld_cheque_date').removeAttribute("required");
+			document.getElementById('cheque_date').style.display = style;
+		}
+				   
+			
+    }
+	
+	"use strict";
+      function paymet_status(val){
+        if(val==3){
+           var style = 'none'; 
+			document.getElementById('payment_type').style.display = style;
+			document.getElementById('fld_payment_type').removeAttribute("required");
+			document.getElementById('fld_bank').removeAttribute("required");
+			document.getElementById('bank_account').style.display = style;
+			document.getElementById('fld_cheque_number').removeAttribute("required");
+			document.getElementById('cheque_number').style.display = style;
+			
+			document.getElementById('fld_cheque_date').removeAttribute("required");
+			document.getElementById('cheque_date').style.display = style;
+        }else if(val==""){
+			var style = 'none'; 
+			document.getElementById('payment_type').style.display = style;
+			document.getElementById('fld_payment_type').removeAttribute("required");
+			document.getElementById('fld_bank').removeAttribute("required");
+			document.getElementById('bank_account').style.display = style;
+			document.getElementById('fld_cheque_number').removeAttribute("required");
+			document.getElementById('cheque_number').style.display = style;
+			
+			document.getElementById('fld_cheque_date').removeAttribute("required");
+			document.getElementById('cheque_date').style.display = style;
+		}else if(val==4){
+			var style = 'none'; 
+			document.getElementById('payment_type').style.display = style;
+			document.getElementById('fld_payment_type').removeAttribute("required");
+			document.getElementById('fld_bank').removeAttribute("required");
+			document.getElementById('bank_account').style.display = style;
+			document.getElementById('fld_cheque_number').removeAttribute("required");
+			document.getElementById('cheque_number').style.display = style;
+			
+			document.getElementById('fld_cheque_date').removeAttribute("required");
+			document.getElementById('cheque_date').style.display = style;
+		}else{
+		   var style ='';
+			document.getElementById('payment_type').style.display = style;
+		}
+				   
+			
+    }
+	$(document).on("submit","#addSupplier",function(e) {
+		e.preventDefault();
+		$.ajax({
+			data: $('#addSupplier').serialize(),
+			dataType: "html",
+			type: "POST",
+			url:"Purchase/add_ajax",
+			success: function(res) {
+				var obj=JSON.parse(res);
+				
+				if(obj.responce == 'success'){
+					$.notify(obj.message,obj.responce);	
+					$("#fld_supplier_id").html("");
+					var $dropdown = $("#fld_supplier_id");
+					
+					$.each(obj.data.suppliers, function(item) {
+						
+						$dropdown.append($("<option />").val(this.fld_id).text(this.fld_company_name));
+					});
+					$('#fld_supplier_id').val(obj.data.supplier_id);
+					 $('#addSupplier')[0].reset();
+					$("#purchasediv").show();
+					$("#supplierdiv").hide();
+				}else{
+					$.notify(obj.message,obj.responce);	
+				}
+			}
+		})
+	});
+	$(document).ready(function () {
+
+		$('#addSupplier').validate({ // initialize the plugin
+			rules: {
+				fld_supplier_name: {
+					required: true
+				},
+				fld_company_name: {
+					required: true
+				}
+			}
+		});
+
+	});
+	$(document).on("click","#add_purchase_draft",function(e) {
+		e.preventDefault();
+		
+		 $('#add_purchase_draft').prop('disabled', true);
+		$.ajax({
+			data: $('#addPurchase').serialize(),
+			dataType: "html",
+			type: "POST",
+			url:"Purchase/addPurchaseDraft",
+			success: function(res) {
+				var obj=JSON.parse(res);
+				
+				if(obj.responce == 'success'){
+					$.notify(obj.message,obj.responce);	
+					setTimeout(function(){ 
+					window.location.href = base_url+"Purchase/manage_drafts";
+					}, 3000);
+				}else{
+					$.notify(obj.message,obj.responce);	
+					$('#add_purchase_draft').prop('disabled', false);
+				}
+			}
+		})
+	});
+	$(document).on("click","#update_draft_purchase",function(e) {
+		e.preventDefault();
+		$('#update_draft_purchase').prop('disabled', true);
+		$.ajax({
+			url:base_url+"Purchase/updatePurchaseDraft",
+			dataType: "html",
+			type: "POST",
+			data: $('#updateDraftPurchase').serialize(),
+			success: function(res) {
+				var obj=JSON.parse(res);
+				
+				if(obj.responce == 'success'){
+					$.notify(obj.message,obj.responce);	
+					setTimeout(function(){ 
+					window.location.href = base_url+"Purchase/manage_drafts";
+					}, 3000);
+				}else{
+					$.notify(obj.message,obj.responce);	
+					$('#update_draft_purchase').prop('disabled', false);
+				}
+			}
+		})
+	});
+	
+	$(document).on("click","#show_report",function(e) {
+		e.preventDefault();
+		$.ajax({
+			url:base_url+"Purchase/filter",
+			dataType: "html",
+			type: "POST",
+			data: $('#purchasefilter').serialize(),
+			success: function(res) {
+				var obj=JSON.parse(res);
+				$("#filterhtml").html(obj.html);
+				if(obj.count > 0){
+				$('#datatable').DataTable({
+					"order": []
+				});
+				}
+			}
+		})
+	});
+	function setreportfilter(val){
+		$("#filter_type").val(val);
+	}
+	
+	

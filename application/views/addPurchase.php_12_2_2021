@@ -1,0 +1,529 @@
+
+<style>
+.select2-dropdown {
+    background-color: #212744;
+    border: 1px solid #575252;
+	border-bottom: 1px solid #2a2f4e;
+}
+.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #5897FB;
+}
+.select2-container--default .select2-selection--single {
+    background-color: #212744;
+    border: 1px solid #575252;
+    border-radius: 4px;
+	height: 36px;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #bac1dc;
+    line-height: 28px;
+	padding-top: 2px;
+}
+.col-form-label {
+    text-align: center;
+}
+.btn-success, .btn-info, .btn-primary, .btn-warning,.btn-danger,.btn-gradient-primary,.btn-gradient-danger{
+	box-shadow: 0 0 black;
+}
+.btn-success{
+	border: 1px solid #575252;
+    background-color: #212744;
+}
+.btn-success:hover {
+    background-color: #212744;
+    border-color: #575252;
+}
+.daterangepicker .calendar-table {
+    background-color: #10163B;
+}
+.daterangepicker {
+    background-color: #10163B;
+	border: 1px solid #506ee4;
+}
+.daterangepicker td.off, .daterangepicker td.off.in-range, .daterangepicker td.off.start-date, .daterangepicker td.off.end-date {
+    background-color: #10163B;
+}
+.daterangepicker td.available:hover, .daterangepicker th.available:hover {
+    background-color: #8a8787;
+}
+</style>
+<div class="container-fluid">
+<div class="row">
+	<div class="col-sm-12">
+		<div class="page-title-box">
+			<div class="float-right">
+    			<div class="btn-group" role="group" aria-label="Basic outlined example">
+                  <a href="<?= base_url();?>Purchase" type="button" class="btn btn-primary btn-large"><i class="fa fa-shopping-cart"></i>&nbsp;Create Purchase</a>
+                  <a href="<?= base_url();?>Purchase/manage_purchase" type="button" class="btn btn-outline-primary"><i class="fa fa-vcard"></i>&nbsp;Manage Purchase</a>
+                  <a href="<?= base_url();?>Purchase/manage_drafts" type="button" class="btn btn-outline-primary"><i class="fa fa-files-o"></i>&nbsp;Purchase Order</a>
+                  <a href="<?= base_url();?>Purchase/purchReport" type="button" class="btn btn-outline-primary"><i class="fa fa-bar-chart"></i>&nbsp;Purchase Report</a>
+                </div>
+			</div>
+			<h4 class="page-title">Create Purchase</h4>
+				<ol class="breadcrumb">
+					<li class="breadcrumb-item"><a href="javascript:void(0);">ERP</a></li>
+					<li class="breadcrumb-item active">Create Purchase</li>
+				</ol>
+		</div><!--end page-title-box-->
+	</div><!--end col-->
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<div class="card">
+			<div class="card-body">
+				
+				<div class="row" id="purchasediv">
+				<div class="col-lg-12">
+				<?php $error_message = $this->session->userdata('error_message');
+				if (isset($error_message)) {
+					?>
+					<div class="alert alert-danger">
+						
+						<?php echo $error_message ?>                    
+					</div>
+					<?php
+					$this->session->unset_userdata('error_message');
+				}?>
+				<?php $success_message = $this->session->userdata('success_message');
+				if (isset($success_message)) {
+					?>
+					<div class="alert alert-success">
+						
+						<?php echo $success_message ?>                    
+					</div>
+					<?php
+					$this->session->unset_userdata('success_message');
+				}?>
+				</div>
+				<div class="panel-body">
+                    <form id="addPurchase" action="<?= base_url('Purchase/add');?>" class="form-vertical"  method="post" >
+                                                                         
+                        
+						<div class="col-sm-12">
+							<h4 class="form-section"><i class="icon-eye6"></i>Purchase Details</h4>
+						</div>
+						
+						<hr>
+                        <div class="row">
+						
+                            <div class="col-sm-6">
+                                <div class="form-group row">
+                                    <label for="supplier_sss" class="col-sm-4 col-form-label">Supplier                                        <i class="text-danger">*</i>
+                                    </label>
+                                    <div class="col-sm-6">
+                                        <select class="select2 form-control mb-3 custom-select" style="width: 100%; height:36px;" name="fld_supplier_id" id="fld_supplier_id" required>
+                                                <option value="">Select Supplier</option>
+
+												<?php
+													
+												if($supplier){
+													
+													foreach($supplier as $sup){
+													?>
+												<option value="<?= $sup['fld_id'];?>"><?= $sup['fld_company_name'];?></option>
+												<?php }}?>
+												
+                                                
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-2">
+                                        <a class="btn btn-success" onclick="purchase_function('supplierdiv')"  title="Add New Supplier" href="javascript:;"><i class="fa fa-user-plus"></i></a>
+                                    </div>
+                                </div> 
+                            </div>
+
+                             <div class="col-sm-6">
+                                <div class="form-group row">
+                                    <label for="date" class="col-sm-4 col-form-label">Purchase Date                                        <i class="text-danger">*</i>
+                                    </label>
+                                    <div class="col-sm-8">
+									<input type="text" required="" tabindex="2" class="form-control datepicker" name="fld_purchase_date" value="" id="fld_purchase_date" >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="form-group row">
+                                    <label for="invoice_no" class="col-sm-4 col-form-label">Invoice No <i class="text-danger"></i>
+                                    </label>
+                                    <div class="col-sm-6">
+                                        <input type="text" tabindex="3" class="form-control"  placeholder="Invoice No"  id="fld_invoice_no" name="fld_invoice_no">
+										
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-6">
+                               <div class="form-group row">
+                                    <label for="adress" class="col-sm-4 col-form-label">Voucher Number</label>
+                                    <div class="col-sm-8">
+                                        
+										<input type="text" readonly tabindex="3" class="form-control" name="fld_voucher_no" placeholder="Voucher Number" id="fld_voucher_no" value="<?php echo $autoVoucherID;?>">
+										
+                                    </div>
+                                </div> 
+                            </div>
+                        </div>
+						<div class="row">
+                            <div class="col-sm-6">
+                                <div class="form-group row">
+                                    <label for="invoice_no" class="col-sm-4 col-form-label">Shipment <i class="text-danger">*</i>
+                                    </label>
+                                    <div class="col-sm-6">
+                                        <input type="text" tabindex="3" class="form-control" name="fld_shipment" required placeholder="OGDCL/NASHPA/--" id="fld_shipment">
+										
+                                    </div>
+                                </div>
+                            </div>
+							<div class="col-sm-6">
+                                <div class="form-group row">
+                                    <label for="supplier_sss" class="col-sm-4 col-form-label">Location                                        
+                                    </label>
+                                    <div class="col-sm-6">
+                                        <select class="select2 form-control mb-3 custom-select" style="width: 100%; height:36px;" name="fld_location" id="fld_location" >
+                                                <option value="" selected >Select Location</option>
+
+												<?php
+													
+												if($locations){
+													
+													foreach($locations as $loc){
+													?>
+												<option value="<?= $loc['fld_id'];?>" <?= ($loc['fld_location'] == "In Transit" || $loc['fld_location'] == "in transit") ? 'selected':'';?>><?= $loc['fld_location'];?></option>
+												<?php }}?>
+												
+                                                
+                                        </select>
+                                    </div>
+                                   
+                                </div> 
+                            </div>
+                            
+                        </div>
+                        
+						<div class="col-sm-12">
+								<h4 class="form-section"><i class="icon-eye6"></i>Product Details</h4>
+						</div>
+						<hr>
+						
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover" id="purchaseTable">
+                                <thead>
+                                     <tr>
+                                            <th class="text-center" width="20%">Product Category<i class="text-danger">*</i></th> 
+                                            <th class="text-center">Unit Code</th>
+                                            <th class="text-center">Qnt <i class="text-danger">*</i></th>
+                                            <th class="text-center">Unit Price <i class="text-danger">*</i></th>
+                                            <th class="text-center">Sub Total</th>
+                                            <th class="text-center">Action</th>
+                                        </tr>
+                                </thead>
+                                <tbody id="addPurchaseItem">
+                                    <tr>
+                                        <td class="span3 supplier">
+                                           <select class="select2 form-control mb-3 custom-select fld_product_id" name="fld_product_id[]" onchange="product_category(1);" id="product_id_1">
+                                                <option value="" selected="selected">Select Product</option>
+                                                
+												<?php
+													
+												if($category){
+												    foreach($category as $cat){
+												?>
+												<option value="<?= $cat['fld_id'];?>" data-unit="<?= $cat['fld_unit'];?>"><?= $cat['fld_category'];?></option>
+												<?php }}?>
+												
+                                                
+											</select>
+                                        </td>
+
+                                       <td class="wt">
+                                                <input type="text" id="unit_code_1" class="form-control text-center " placeholder="Unit Code" readonly>
+                                            </td>
+                                        
+                                            <td class="text-right">
+                                                <input type="text" required name="fld_quantity[]" id="cartoon_1" required min="0" class="form-control text-right" onkeyup="calculate_store(1);" onchange="calculate_store(1);" placeholder="0.00" value="" tabindex="6" aria-required="true">
+                                            </td>
+                                            <td class="test">
+                                                <input type="text" name="fld_unit_price[]" required="" onkeyup="calculate_store(1);" onchange="calculate_store(1);" id="product_rate_1" class="form-control product_rate_1 text-right" placeholder="0.00" value="" min="0" tabindex="7" aria-required="true">
+                                            </td>
+                                           
+
+                                            <td class="text-right">
+                                                <input class="form-control total_price text-right" type="text" name="fld_total_amount[]" id="total_price_1" value="0.00" readonly="readonly">
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-danger text-right red" type="button" value="Delete" onclick="deleteRow(this)" tabindex="8"><i class="fas fa-times"></i></button>
+                                            </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        
+                                        <td class="text-right" colspan="4"><b>Total:</b></td>
+                                        <td class="text-right">
+                                            <input type="text" id="fld_grand_total_amount" class="text-right form-control" name="fld_grand_total_amount" value="0.00" readonly="readonly">
+                                        </td>
+                                        <td> <button type="button" id="add_invoice_item" class="btn btn-info" name="add-invoice-item" onclick="addPurchaseOrderField1('addPurchaseItem')" tabindex="9"><i class="fa fa-plus"></i></button>
+
+                                            <input type="hidden" name="baseUrl" class="baseUrl" value="http://localhost/erp/"></td>
+                                    </tr>
+                                    <?php /*?><tr>
+                                       
+                                        <td class="text-right" colspan="4"><b>Discount:</b></td>
+                                        <td class="text-right">
+                                            <input type="text" id="discount" class="text-right form-control discount" onkeyup="calculate_store(1)" name="discount" placeholder="0.00" value="">
+                                        </td>
+                                        <td> 
+
+                                           </td>
+                                    </tr>
+
+                                    <tr>
+                                        
+                                        <td class="text-right" colspan="4"><b>Grand Total:</b></td>
+                                        <td class="text-right">
+                                            <input type="text" id="grandTotal" class="text-right form-control" name="grand_total_price" value="0.00" readonly="readonly">
+                                        </td>
+                                        <td> </td>
+                                    </tr>
+                                     <tr>
+                                        
+                                        <td class="text-right" colspan="4"><b>Paid Amount:</b></td>
+                                        <td class="text-right">
+                                            <input type="text" id="paidAmount" class="text-right form-control" onkeyup="invoice_paidamount()" name="paid_amount" value="">
+                                        </td>
+                                        <td> </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" class="text-right">
+                                             <!--<input type="button" id="full_paid_tab" class="btn btn-warning" value="Full Paid" tabindex="16" onclick="full_paid()">-->
+                                        </td>
+                                        <td class="text-right" colspan="2"><b>Due Amount:</b></td>
+                                        <td class="text-right">
+                                            <input type="text" id="dueAmmount" class="text-right form-control" name="due_amount" value="0.00" readonly="readonly">
+                                        </td>
+                                        <td></td>
+                                    </tr><?php */?>
+                                </tfoot>
+                            </table>
+                        </div>
+						<div class="col-sm-12">
+								<h4 class="form-section"><i class="icon-eye6"></i>Payment Details</h4>
+						</div>
+						<hr>
+						<div class="row">
+                            <div class="col-sm-6">
+                                <div class="form-group row">
+                                    <label for="invoice_no" class="col-sm-4 col-form-label">Payment Status                                        <i class="text-danger">*</i>
+                                    </label>
+                                    <div class="col-sm-6">
+										<select class="select2 form-control mb-3 custom-select" onchange="paymet_status(this.value)" id="fld_payment_status" name="fld_payment_status" required="required">
+											<option value="">Select Payment Status</option>
+											<option value="1" >Paid</option>
+											<option value="2">Partial Paid</option>
+											<option value="3" >UnPaid</option>
+											<option value="4" >Advance Payment</option>
+										</select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-6">
+                               <div class="form-group row" id="payment_type" style="display:none;">
+                                    <label for="invoice_no" class="col-sm-4 col-form-label">Payment Type                                        <i class="text-danger"></i>
+                                    </label>
+                                    <div class="col-sm-6">
+										<select class="select2 form-control mb-3 custom-select" onchange="bank_paymet(this.value)" id="fld_payment_type" name="fld_payment_type">
+										<option value="">Select Payment Type</option>
+										<option value="1">Cash</option>
+										<option value="2">Bank</option>
+										<option value="3">Cheque</option>
+										</select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+						
+						<div class="row">
+                            <div class="col-sm-6">
+                                <div class="form-group row" id="bank_account" style="display:none;">
+                                    <label for="invoice_no" class="col-sm-4 col-form-label">Bank Account                                        <i class="text-danger"></i>
+                                    </label>
+                                    <div class="col-sm-6">
+										<select class="select2 form-control mb-3 custom-select" id="fld_bank" name="fld_bank" >
+											<option value="">Select Bank Account</option>
+											<?php
+													
+												if($banks){
+													
+													foreach($banks as $bnk){
+													?>
+												<option value="<?= $bnk['fld_id'];?>"><?= $bnk['fld_bank'];?></option>
+												<?php }}?>
+										</select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-6">
+                               <div class="form-group row" id="cheque_number" style="display:none;">
+                                    <label for="invoice_no" class="col-sm-4 col-form-label">Cheque Number                                       <i class="text-danger"></i>
+                                    </label>
+                                    <div class="col-sm-6">
+										<input type="text" tabindex="3" class="form-control" name="fld_cheque_number" placeholder="Cheque Number" id="fld_cheque_number">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+						<div class="row">
+                            <div class="col-sm-6">
+                               <div class="form-group row" id="cheque_date" style="display:none;">
+                                    <label for="invoice_no" class="col-sm-4 col-form-label">Cheque Date 
+									<i class="text-danger"></i>
+                                    </label>
+                                    <div class="col-sm-6">
+										<input type="text" tabindex="3" class="form-control datepicker" name="fld_cheque_date" placeholder="" id="fld_cheque_date">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="form-group row">
+                            <div class="col-sm-8">
+                                <input type="submit" id="add_purchase" class="btn btn-successs" name="add-purchase" value="Submit">
+                                <input type="submit" value="Submit And Add Another One" name="add-purchase-another" class="btn btn-success1" id="add_purchase_another">
+								<input type="button" id="add_purchase_draft" class="btn btn-warning btn-large" name="add-purchase-draft" value="Purchase Draft">
+								<input type="reset"  class="btn btn-danger btn-large" name="reset" value="Reset">
+                            </div>
+                        </div>
+                        <br>
+                    </form>
+                </div>
+				
+				</div>
+	<!----------------------------------------Add Supplier ------------------------------->
+				<div class="row" id="supplierdiv" style="display:none;">
+				<div class="col-lg-12">
+					<h4 class="form-section"><i class="icon-eye6"></i>Add Supplier</h4>
+				</div>
+				<div class="col-lg-12" style="padding:0px;">
+					<hr>
+				</div>
+				
+				
+				<form method="post" id="addSupplier" >
+				<div class="row">
+				
+				<div class="col-lg-6">
+					<div class="mt-3">
+						<label class="mb-2">Supplier Code *</label>
+						
+						<input type="text" class="form-control" name="fld_supplier_code" readonly  value="<?= $maxid;?>" required tabindex="1">            
+					</div> 
+					<div class="mt-3">
+						<label class="mb-2">Company Name *</label>
+						
+						<input type="text"  name="fld_company_name" class="form-control" id="fld_company_name" required tabindex="3">
+					</div>
+					                                    
+					
+					<div class="mt-3">
+						<label class="mb-2">Landline #</label>
+						
+						<input type="text" class="form-control"  name="fld_landline_num" id="fld_landline_num" tabindex="5">
+					</div>
+					
+					<div class="mt-3">
+						<label class="mb-2">Opening Balance</label>
+						
+						<input type="text" class="form-control"  name="fld_opening_bal" id="fld_opening_bal" tabindex="7">
+					</div>
+					<div class="mt-3">
+						<label class="mb-2">Email</label>
+						
+						<input type="text" class="form-control"  name="fld_email" id="fld_email" tabindex="9">
+					</div>
+				    <div class="mt-3">
+						<label class="mb-2">City</label>
+						
+						<input type="text" class="form-control"  name="fld_city" id="fld_city" tabindex="11">
+					</div>
+					<div class="mt-3">
+						<label class="mb-2">Country</label>
+						
+						<input type="text" class="form-control" name="fld_country" id="fld_country" tabindex="13">
+					</div>
+					                            
+				</div> 
+				<div class="col-lg-6">
+					<div class="mt-3">
+						<label class="mb-2">Supplier Name *</label>
+						
+						<input type="text" class="form-control"  name="fld_supplier_name" id="fld_supplier_name" required tabindex="2">
+					</div>
+					<div class="mt-3">
+						<label class="mb-2">Mobile # *</label>
+						
+						<input type="text" class="form-control"  name="fld_mobile_num" id="fld_mobile_num" required tabindex="4">
+					</div>
+					
+					<div class="mt-3">
+						<label class="mb-2">Supplier Type *</label>
+						<select class="form-control" name="fld_supplier_type" id="fld_supplier_type" required tabindex="6">
+							<option value="">Select type</option>
+							<option value="1">Local</option>
+							<option value="2">Importer</option>
+						</select>
+					</div>
+					<div class="mt-3">
+						<label class="mb-2">CNIC</label>
+						
+						<input type="text" class="form-control"  name="fld_cnic" id="fld_cnic" tabindex="8">
+					</div>
+					<div class="mt-3">
+						<label class="mb-2">NTN</label>
+						
+						<input type="text" class="form-control"  name="fld_ntn" id="fld_ntn" tabindex="10">
+					</div>
+					<div class="mt-3">
+						<label class="mb-2">City Area</label>
+						
+						<input type="text" class="form-control"  name="fld_city_area" id="fld_city_area" tabindex="12">
+					</div> 
+				</div>
+				<div class="col-lg-6">
+					<div class="mt-3">
+						<label class="mb-2"></label>
+						<button type="submit" name="submit" class="btn btn-gradient-primary">Submit</button>
+						<button type="button" onclick="purchase_function('purchasediv')" class="btn btn-gradient-danger">Cancel</button>
+					</div>
+				</div>
+				
+				</div>
+				</form>
+				
+				</div>
+		<!----------------------------------------End Supplier ------------------------------->
+			</div>
+			</div> <!-- end card-body -->
+		</div> <!-- end card -->                                       
+	</div> <!-- end col -->
+
+
+</div>
+	<div id="productSelect" style="display:none;">
+			<?php
+				
+			if($category){
+				
+				foreach($category as $cat){
+				?>
+			<option value="<?= $cat['fld_id'];?>" data-unit="<?= $cat['fld_unit'];?>"><?= $cat['fld_category'];?></option>
+			<?php }}?>
+	</div>             
+
+</div><!-- container -->
+
+                

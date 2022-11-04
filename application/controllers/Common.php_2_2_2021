@@ -1,0 +1,608 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class Common extends My_controller {
+	
+	function __construct() {
+        parent::__construct();
+        $this->load->model('Common_model');
+    }
+	
+	public function index()
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+        $this->title = "Add Category | ".$this->title;
+		$data['units']=$this->Base_model->getAll('tbl_units');
+		$data['supplier']=$this->Base_model->getAll('tbl_suppliers');
+        $this->load_template('','addCategory',$data);
+    }
+	public function add(){
+
+		$this->form_validation->set_rules('fld_category', 'Category', 'required|is_unique[tbl_category.fld_category]');
+		$this->form_validation->set_rules('fld_unit', 'Unit', 'required');
+		//$this->form_validation->set_rules('fld_supplier_id', 'Supplier', 'required');
+
+		if ($this->form_validation->run() == FALSE) {
+		
+			$this->session->set_userdata(array('error_message' => validation_errors()));
+            $this->output->set_header("Location: " . base_url() . 'Common', TRUE, 302);
+		} else {
+			$user_id= $this->session->userdata('user_id');
+			$data = array(
+            'fld_userid' => $user_id,
+            'fld_category'=> $this->input->post('fld_category',TRUE),
+            'fld_unit'=> $this->input->post('fld_unit',TRUE),
+            //'fld_supplier_id'=> $this->input->post('fld_supplier_id',TRUE),
+            'fld_status' => 1
+        );
+        
+        $supplier=$this->db->insert('tbl_category',$data);
+		if($supplier){
+			$this->session->set_userdata(array('success_message' => "Category added successfully"));
+            $this->output->set_header("Location: " . base_url() . 'Common/manage_Category', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Category not added.Something went wrong"));
+            $this->output->set_header("Location: " . base_url() . 'Common', TRUE, 302);
+		}
+			
+		}
+	}
+	public function edit($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+        $this->title = "Edit Category | ".$this->title;
+		$data['category']=$this->Base_model->getRow('tbl_category','','fld_id ='.$id.'');
+		
+		$data['units']=$this->Base_model->getAll('tbl_units');
+		$data['supplier']=$this->Base_model->getAll('tbl_suppliers');
+        $this->load_template('','editCategory',$data);
+	}
+	public function editProcess(){
+		
+			if($this->input->post('fld_category') != $this->input->post('orignal_category')) {
+			   $is_unique =  '|is_unique[tbl_category.fld_category]';
+			} else {
+			   $is_unique =  '';
+			}
+		
+		$this->form_validation->set_rules('fld_category', 'Category', 'required'.$is_unique);
+		$this->form_validation->set_rules('fld_unit', 'Unit', 'required');
+		//$this->form_validation->set_rules('fld_supplier_id', 'Supplier', 'required');
+		$cat_id=$this->input->post('fld_category_id');
+		if ($this->form_validation->run() == FALSE) {
+		
+			$this->session->set_userdata(array('error_message' => validation_errors()));
+            $this->output->set_header("Location: " . base_url() . 'Common/edit/'.$cat_id.'', TRUE, 302);
+		} else {
+			$data = array(
+            'fld_category'=> $this->input->post('fld_category',TRUE),
+            'fld_unit'=> $this->input->post('fld_unit',TRUE),
+			//'fld_supplier_id'=> $this->input->post('fld_supplier_id',TRUE),
+			);
+        
+			
+			$this->db->where('fld_id',$cat_id);
+			$category=$this->db->update('tbl_category',$data);
+		if($category){
+			$this->session->set_userdata(array('success_message' => "Category updated successfully"));
+            $this->output->set_header("Location: " . base_url() . 'Common/manage_Category', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Category not updated.Something went wrong"));
+            $this->output->set_header("Location: " . base_url() . 'Common/edit/'.$cat_id.'', TRUE, 302);
+		}
+			
+		}
+		
+	}
+	public function manage_Category()
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$this->title = "Manage Categories | ".$this->title;
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		);
+		$data['view_css']=array(
+		
+		);
+       
+		$data['categories']=$this->Base_model->getAll('tbl_category');
+        $this->load_template('','manage_category',$data);
+    }
+	public function delete($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$responce=$this->Base_model->delete('tbl_category','fld_id ='.$id.'');
+        if($responce){
+			$this->session->set_userdata(array('success_message' => "Category deleted successfully"));
+			$this->output->set_header("Location: " . base_url() . 'Common/manage_Category', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Category not deleted.Something went wrong"));
+			$this->output->set_header("Location: " . base_url() . 'Common/manage_Category', TRUE, 302);
+		}
+	}
+	public function addUnit()
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		if($this->input->post()){
+			
+			$this->form_validation->set_rules('fld_unit', 'Unit', 'required|is_unique[tbl_units.fld_unit]');
+
+		if ($this->form_validation->run() == FALSE) {
+		
+			$this->session->set_userdata(array('error_message' => validation_errors()));
+            $this->output->set_header("Location: " . base_url() . 'Common/addUnit', TRUE, 302);
+		} else {
+			$user_id= $this->session->userdata('user_id');
+			$data = array(
+            'fld_userid' => $user_id,
+            'fld_unit'=> $this->input->post('fld_unit',TRUE),
+            'fld_status' => 1
+        );
+        
+        $unit=$this->db->insert('tbl_units',$data);
+		if($unit){
+			$this->session->set_userdata(array('success_message' => "Product Unit added successfully"));
+            $this->output->set_header("Location: " . base_url() . 'Common/manage_Unit', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Product Unit not added.Something went wrong"));
+            $this->output->set_header("Location: " . base_url() . 'Common/addUnit', TRUE, 302);
+		}
+			
+		}
+		}else{
+			$this->title = "Add Unit | ".$this->title;
+
+			$this->load_template('','addUnit');
+		}
+        
+    }
+	public function manage_Unit()
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$this->title = "Manage Units | ".$this->title;
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		);
+		$data['view_css']=array(
+		
+		);
+       
+		$data['units']=$this->Base_model->getAll('tbl_units');
+        $this->load_template('','manage_units',$data);
+    }
+	public function editUnit($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+        $this->title = "Edit Unit | ".$this->title;
+		$data['unit']=$this->Base_model->getRow('tbl_units','','fld_id ='.$id.'');
+        $this->load_template('','editUnit',$data);
+	}
+	public function editUnitProcess(){
+		
+			if($this->input->post('fld_unit') != $this->input->post('orignal_unit')) {
+			   $is_unique =  '|is_unique[tbl_units.fld_unit]';
+			} else {
+			   $is_unique =  '';
+			}
+		
+		$this->form_validation->set_rules('fld_unit', 'Unit', 'required'.$is_unique);
+		$unit_id=$this->input->post('fld_unit_id');
+		if ($this->form_validation->run() == FALSE) {
+		
+			$this->session->set_userdata(array('error_message' => validation_errors()));
+            $this->output->set_header("Location: " . base_url() . 'Common/editUnit/'.$unit_id.'', TRUE, 302);
+		} else {
+			$data = array(
+            'fld_unit'=> $this->input->post('fld_unit',TRUE)
+			);
+        
+			
+			$this->db->where('fld_id',$unit_id);
+			$unit=$this->db->update('tbl_units',$data);
+		if($unit){
+			$this->session->set_userdata(array('success_message' => "Product Unit updated successfully"));
+            $this->output->set_header("Location: " . base_url() . 'Common/manage_Unit', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Product Unit not updated.Something went wrong"));
+            $this->output->set_header("Location: " . base_url() . 'Common/editUnit/'.$unit_id.'', TRUE, 302);
+		}
+			
+		}
+		
+	}
+	public function deleteUnit($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$responce=$this->Base_model->delete('tbl_units','fld_id ='.$id.'');
+        if($responce){
+			$this->session->set_userdata(array('success_message' => "Product unit deleted successfully"));
+			$this->output->set_header("Location: " . base_url() . 'Common/manage_Unit', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Product unit not deleted.Something went wrong"));
+			$this->output->set_header("Location: " . base_url() . 'Common/manage_Unit', TRUE, 302);
+		}
+	}
+	public function addLocation()
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		if($this->input->post()){
+			
+			$this->form_validation->set_rules('fld_location', 'Location', 'required|is_unique[tbl_locations.fld_location]');
+			$this->form_validation->set_rules('fld_address', 'Location address', 'required');
+
+		if ($this->form_validation->run() == FALSE) {
+		
+			$this->session->set_userdata(array('error_message' => validation_errors()));
+            $this->output->set_header("Location: " . base_url() . 'Common/addLocation', TRUE, 302);
+		} else {
+			
+			$user_id= $this->session->userdata('user_id');
+			$data = array(
+            'fld_userid' => $user_id,
+            'fld_location'=> $this->input->post('fld_location',TRUE),
+            'fld_address'=> $this->input->post('fld_address',TRUE),
+            'fld_status' => 1
+        );
+        
+        $unit=$this->db->insert('tbl_locations',$data);
+		if($unit){
+			$this->session->set_userdata(array('success_message' => "Location added successfully"));
+            $this->output->set_header("Location: " . base_url() . 'Common/manage_Location', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Location not added.Something went wrong"));
+            $this->output->set_header("Location: " . base_url() . 'Common/addLocation', TRUE, 302);
+		}
+			
+		}
+		}else{
+			$this->title = "Add Location | ".$this->title;
+
+			$this->load_template('','addLocation');
+		}
+        
+    }
+	public function manage_Location()
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$this->title = "Manage Locations | ".$this->title;
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		);
+		$data['view_css']=array(
+		
+		);
+       
+		$data['locations']=$this->Base_model->getAll('tbl_locations');
+        $this->load_template('','manage_locations',$data);
+    }
+	public function editLocation($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+        $this->title = "Edit Location | ".$this->title;
+		$data['location']=$this->Base_model->getRow('tbl_locations','','fld_id ='.$id.'');
+        $this->load_template('','editlocation',$data);
+	}
+	public function editLocationProcess(){
+		
+			if($this->input->post('fld_location') != $this->input->post('orignal_location')) {
+			   $is_unique =  '|is_unique[tbl_locations.fld_location]';
+			} else {
+			   $is_unique =  '';
+			}
+		
+		$this->form_validation->set_rules('fld_location', 'Location name', 'required'.$is_unique);
+		$this->form_validation->set_rules('fld_address', 'Address', 'required'.$is_unique);
+		$location_id=$this->input->post('fld_location_id');
+		if ($this->form_validation->run() == FALSE) {
+		
+			$this->session->set_userdata(array('error_message' => validation_errors()));
+            $this->output->set_header("Location: " . base_url() . 'Common/editLocation/'.$location_id.'', TRUE, 302);
+		} else {
+			$data = array(
+            'fld_location'=> $this->input->post('fld_location',TRUE),
+			'fld_address'=> $this->input->post('fld_address',TRUE),
+			);
+        
+			
+			$this->db->where('fld_id',$location_id);
+			$unit=$this->db->update('tbl_locations',$data);
+		if($unit){
+			$this->session->set_userdata(array('success_message' => "Location updated successfully"));
+            $this->output->set_header("Location: " . base_url() . 'Common/manage_Location', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Location not updated.Something went wrong"));
+            $this->output->set_header("Location: " . base_url() . 'Common/editLocation/'.$location_id.'', TRUE, 302);
+		}
+			
+		}
+		
+	}
+	public function deleteLocation($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$responce=$this->Base_model->delete('tbl_locations','fld_id ='.$id.'');
+        if($responce){
+			$this->session->set_userdata(array('success_message' => "Location deleted successfully"));
+			$this->output->set_header("Location: " . base_url() . 'Common/manage_Location', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Location not deleted.Something went wrong"));
+			$this->output->set_header("Location: " . base_url() . 'Common/manage_Location', TRUE, 302);
+		}
+	}
+	public function addBank()
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		if($this->input->post()){
+			
+			$this->form_validation->set_rules('fld_bank', 'Bank', 'required|is_unique[tbl_banks.fld_bank]');
+			$this->form_validation->set_rules('fld_address', 'Bank address', 'required');
+
+		if ($this->form_validation->run() == FALSE) {
+		
+			$this->session->set_userdata(array('error_message' => validation_errors()));
+            $this->output->set_header("Location: " . base_url() . 'Common/addBank', TRUE, 302);
+		} else {
+			
+			$user_id= $this->session->userdata('user_id');
+			$data = array(
+            'fld_userid' => $user_id,
+            'fld_bank'=> $this->input->post('fld_bank',TRUE),
+            'fld_address'=> $this->input->post('fld_address',TRUE),
+            'fld_status' => 1
+        );
+        
+        $unit=$this->db->insert('tbl_banks',$data);
+		if($unit){
+			$this->session->set_userdata(array('success_message' => "Bank added successfully"));
+            $this->output->set_header("Location: " . base_url() . 'Common/manage_Bank', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Bank not added.Something went wrong"));
+            $this->output->set_header("Location: " . base_url() . 'Common/addBank', TRUE, 302);
+		}
+			
+		}
+		}else{
+			$this->title = "Add Bank | ".$this->title;
+
+			$this->load_template('','addBank');
+		}
+        
+    }
+	public function manage_Bank()
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$this->title = "Manage Banks | ".$this->title;
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		);
+		$data['view_css']=array(
+		
+		);
+       
+		$data['banks']=$this->Base_model->getAll('tbl_banks');
+        $this->load_template('','manage_bank',$data);
+    }
+	public function editBank($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+        $this->title = "Edit Bank | ".$this->title;
+		$data['bank']=$this->Base_model->getRow('tbl_banks','','fld_id ='.$id.'');
+        $this->load_template('','editBank',$data);
+	}
+	public function editBankProcess(){
+		
+			if($this->input->post('fld_bank') != $this->input->post('orignal_bank')) {
+			   $is_unique =  '|is_unique[tbl_banks.fld_bank]';
+			} else {
+			   $is_unique =  '';
+			}
+		
+		$this->form_validation->set_rules('fld_bank', 'Bank name', 'required'.$is_unique);
+		$this->form_validation->set_rules('fld_address', 'Address', 'required'.$is_unique);
+		$bank_id=$this->input->post('fld_bank_id');
+		if ($this->form_validation->run() == FALSE) {
+		
+			$this->session->set_userdata(array('error_message' => validation_errors()));
+            $this->output->set_header("Location: " . base_url() . 'Common/editBank/'.$bank_id.'', TRUE, 302);
+		} else {
+			$data = array(
+            'fld_bank'=> $this->input->post('fld_bank',TRUE),
+			'fld_address'=> $this->input->post('fld_address',TRUE),
+			);
+        
+			
+			$this->db->where('fld_id',$bank_id);
+			$unit=$this->db->update('tbl_banks',$data);
+		if($unit){
+			$this->session->set_userdata(array('success_message' => "Bank updated successfully"));
+            $this->output->set_header("Location: " . base_url() . 'Common/manage_Bank', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Bank not updated.Something went wrong"));
+            $this->output->set_header("Location: " . base_url() . 'Common/editBank/'.$bank_id.'', TRUE, 302);
+		}
+			
+		}
+		
+	}
+	public function deleteBank($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$responce=$this->Base_model->delete('tbl_banks','fld_id ='.$id.'');
+        if($responce){
+			$this->session->set_userdata(array('success_message' => "Bank deleted successfully"));
+			$this->output->set_header("Location: " . base_url() . 'Common/manage_Bank', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Bank not deleted.Something went wrong"));
+			$this->output->set_header("Location: " . base_url() . 'Common/manage_Bank', TRUE, 302);
+		}
+	}
+	
+	public function addTransporter()
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		if($this->input->post()){
+			
+			$this->form_validation->set_rules('fld_name', 'Name', 'required');
+			$this->form_validation->set_rules('fld_contact_person', 'Contact person', 'required');
+
+		if ($this->form_validation->run() == FALSE) {
+		
+			$this->session->set_userdata(array('error_message' => validation_errors()));
+            $this->output->set_header("Location: " . base_url() . 'Common/addTransporter', TRUE, 302);
+		} else {
+			
+			$user_id= $this->session->userdata('user_id');
+			$data = array(
+				'fld_userid' => $user_id,
+				'fld_name'=> $this->input->post('fld_name',TRUE),
+				'fld_contact_person'=> $this->input->post('fld_contact_person',TRUE),
+				'fld_contact_no' =>$this->input->post('fld_contact_no',TRUE),
+				'fld_area' => $this->input->post('fld_area',TRUE),
+				'fld_gl_account' => $this->input->post('fld_gl_account',TRUE),
+			);
+			
+			$unit=$this->db->insert('tbl_transporter',$data);
+			if($unit){
+				$this->session->set_userdata(array('success_message' => "Transporter added successfully"));
+				$this->output->set_header("Location: " . base_url() . 'Common/manage_Transporter', TRUE, 302);
+			}else{
+				$this->session->set_userdata(array('error_message' => "Transporter not added.Something went wrong"));
+				$this->output->set_header("Location: " . base_url() . 'Common/addTransporter', TRUE, 302);
+			}
+			
+		}
+		}else{
+			$this->title = "Add Transporter | ".$this->title;
+
+			$this->load_template('','addTransporter');
+		}
+        
+    }
+	public function manage_Transporter()
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$this->title = "Manage Transporters | ".$this->title;
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		);
+		$data['view_css']=array(
+		
+		);
+       
+		$data['transporter']=$this->Base_model->getAll('tbl_transporter','','fld_isdeleted=0');
+        $this->load_template('','manageTransporter',$data);
+    }
+	public function deleteTransporter($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$upd=array("fld_isdeleted"=>1);
+		$responce=$this->Base_model->update('tbl_transporter',$upd,'fld_id ='.$id.'');
+        if($responce){
+			$this->session->set_userdata(array('success_message' => "Transporter deleted successfully"));
+			$this->output->set_header("Location: " . base_url() . 'Common/manage_Transporter', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Transporter not deleted.Something went wrong"));
+			$this->output->set_header("Location: " . base_url() . 'Common/manage_Transporter', TRUE, 302);
+		}
+	}
+	public function editTransporter($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+        $this->title = "Edit Transporters | ".$this->title;
+		$data['transporter']=$this->Base_model->getRow('tbl_transporter','','fld_id ='.$id.'');
+        $this->load_template('','editTransporter',$data);
+	}
+	public function editTransprocess(){
+		
+		$this->form_validation->set_rules('fld_name', 'Name', 'required');
+		$this->form_validation->set_rules('fld_contact_person', 'Contact person', 'required');
+		$transporter_id=$this->input->post('transporter_id');
+		if ($this->form_validation->run() == FALSE) {
+		
+			$this->session->set_userdata(array('error_message' => validation_errors()));
+            $this->output->set_header("Location: " . base_url() . 'Common/editBank/'.$bank_id.'', TRUE, 302);
+		} else {
+			$data = array(
+				'fld_name'=> $this->input->post('fld_name',TRUE),
+				'fld_contact_person'=> $this->input->post('fld_contact_person',TRUE),
+				'fld_contact_no' =>$this->input->post('fld_contact_no',TRUE),
+				'fld_area' => $this->input->post('fld_area',TRUE),
+				'fld_gl_account' => $this->input->post('fld_gl_account',TRUE),
+			);
+        
+			
+			$this->db->where('fld_id',$transporter_id);
+			$unit=$this->db->update('tbl_transporter',$data);
+		if($unit){
+			$this->session->set_userdata(array('success_message' => "Transporter updated successfully"));
+            $this->output->set_header("Location: " . base_url() . 'Common/manage_Transporter', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Transporter not updated.Something went wrong"));
+            $this->output->set_header("Location: " . base_url() . 'Common/editTransporter/'.$transporter_id.'', TRUE, 302);
+		}
+			
+		}
+		
+	}
+	
+}

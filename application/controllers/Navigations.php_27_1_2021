@@ -1,0 +1,200 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class Navigations extends My_controller {
+	
+	function __construct() {
+        parent::__construct();
+        $this->load->model('Navigations_model');
+        $this->load->model('Suplier_model');
+        $this->load->model('Purchase_model');
+    }
+	
+	public function index()
+    {
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$this->title = "Manage Pending Navigation | ".$this->title;
+		//$data['purchases']=$this->Navigations_model->getAllPurchases();
+		$data['intransit_purch']=$this->Navigations_model->getAllInTransitPurch();
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		);
+		// echo '<pre>';
+		// print_r($data['intransit_purch']);exit;
+		$this->load_template('','manage_pending_navigation',$data);
+    }
+	public function create_navigation($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+        $this->title = "Create Navigation | ".$this->title;
+		$data['supplier']=$this->Base_model->getAll('tbl_suppliers');
+		$data['banks']=$this->Base_model->getAll('tbl_banks');
+		$data['category']=$this->Purchase_model->getAllProducts('tbl_category');
+		$data['locations']=$this->Base_model->getAll('tbl_locations');
+		$data['units']=$this->Base_model->getAll('tbl_units');
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','moment/moment.js'),
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.js'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.js'),
+		$this->Gen->get_script_url('custom_js','purchase.js'),
+		$this->Gen->get_script_url('custom_js','navigation.js'),
+		$this->Gen->get_script_url('custom_js','jquery.validate.js'),
+		);
+		$data['view_css']=array(
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.css'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.css'),
+		);
+		$data['purchase']=$this->Navigations_model->getInTranPurchByID($id);
+		$maxID=$this->Navigations_model->getMaxID();
+		$data['maxid']=sprintf('%04d', $maxID['Auto_increment']);
+		$data['id']=$id;
+		// echo '<pre>';
+		// print_r($data['purchase']);
+		// exit;
+        $this->load_template('','createNavigation',$data);
+	}
+	public function create(){
+	
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$navigation=$this->Navigations_model->navigation_entry();
+		if (isset($_POST['add-navigation'])) {
+            redirect(base_url('Navigations/manage'));
+            
+        }
+	}
+	
+	public function manage()
+    {
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$this->title = "Manage Navigation | ".$this->title;
+		$data['navigations']=$this->Navigations_model->getAllNavigations();
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		);
+		// echo '<pre>';
+		// print_r($data['navigations']);
+		// exit;
+		$this->load_template('','manage_navigation',$data);
+    }
+	public function edit($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+        $this->title = "Edit Navigation | ".$this->title;
+		$data['supplier']=$this->Base_model->getAll('tbl_suppliers');
+		$data['banks']=$this->Base_model->getAll('tbl_banks');
+		$data['category']=$this->Purchase_model->getAllProducts('tbl_category');
+		$data['locations']=$this->Base_model->getAll('tbl_locations');
+		$data['units']=$this->Base_model->getAll('tbl_units');
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','moment/moment.js'),
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.js'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.js'),
+		$this->Gen->get_script_url('custom_js','purchase.js'),
+		$this->Gen->get_script_url('custom_js','navigation.js'),
+		$this->Gen->get_script_url('custom_js','jquery.validate.js'),
+		);
+		$data['view_css']=array(
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.css'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.css'),
+		);
+		$data['navigation']=$this->Navigations_model->getNavigationByID($id);
+		$maxID=$this->Navigations_model->getMaxID();
+		$data['maxid']=sprintf('%04d', $maxID['Auto_increment']);
+		$data['id']=$id;
+		
+		// echo '<pre>';
+		// print_r($data['navigation']);
+		// exit;
+        $this->load_template('','editNavigation',$data);
+	}
+	public function update(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		// echo '<pre>';
+		// print_r($_POST);
+		// exit;
+		$navigation=$this->Navigations_model->navigation_update_entry();
+		if (isset($_POST['edit-navigation'])) {
+            redirect(base_url('Navigations/manage'));
+            
+        }
+	}
+	public function delete($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$responce=$this->Navigations_model->delete($id);
+        if($responce){
+			$this->session->set_userdata(array('success_message' => "Navigation deleted successfully"));
+			$this->output->set_header("Location: " . base_url() . 'Navigations/manage', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Navigation not deleted.Something went wrong"));
+			$this->output->set_header("Location: " . base_url() . 'Navigations/manage', TRUE, 302);
+		}
+	}
+	public function createIntNav(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+        $this->title = "Create Navigation | ".$this->title;
+		$data['supplier']=$this->Base_model->getAll('tbl_suppliers');
+		$data['banks']=$this->Base_model->getAll('tbl_banks');
+		$data['category']=$this->Purchase_model->getAllProducts('tbl_category');
+		$data['locations']=$this->Base_model->getAll('tbl_locations');
+		$data['units']=$this->Base_model->getAll('tbl_units');
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','moment/moment.js'),
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.js'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.js'),
+		$this->Gen->get_script_url('custom_js','purchase.js'),
+		$this->Gen->get_script_url('custom_js','navigation.js'),
+		$this->Gen->get_script_url('custom_js','jquery.validate.js'),
+		);
+		$data['view_css']=array(
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.css'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.css'),
+		);
+		$maxID=$this->Navigations_model->getMaxID();
+		$data['maxid']=sprintf('%04d', $maxID['Auto_increment']);
+        $this->load_template('','createIntNav',$data);
+	}
+	public function getShipments(){
+		$location=$this->input->post('location');
+		$data['shipments']=$shipments=$this->Navigations_model->getShipments($location);
+		// echo '<pre>';
+		// print_r($data['shipments']);
+		// exit;
+		$html=$this->load->view('stockShipments',$data,true);
+		echo json_encode(array('html'=>$html));
+		
+		
+	}
+	public function selectShipment(){
+		$location_id=$this->input->post('location');
+		$data['shipments']=$shipments=$this->Navigations_model->ShipmentByID($location_id);
+		$total_amount=(int)@$shipments['fld_stock_qty'] * (int)@$shipments['fld_unit_price'];
+		$data['locations']=$this->Base_model->getAll('tbl_locations');
+		$html=$this->load->view('selectShipment',$data,true);
+		echo json_encode(array('html'=>$html,'total_amount'=>$total_amount,'shipments'=>$shipments));
+		
+	}
+	
+	
+}

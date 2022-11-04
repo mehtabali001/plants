@@ -1,0 +1,291 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class Complaints extends My_controller {
+	
+	function __construct() {
+        parent::__construct();
+        $this->load->model('Common_model');
+        $this->load->model('Complaint_model');
+    }
+		
+    public function new_complaint()
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$role_permissions  = explode(",",$this->session->userdata('permissions'));
+		if(!empty($role_permissions) && !in_array(171,$role_permissions)) {
+			$this->session->set_userdata(array('error_message' => "Access Denied!"));
+			$this->output->set_header("Location: " . base_url('home'), TRUE, 302);
+		}
+        $this->title = "Add Complaint | ".$this->title;
+		$data['comp_category']=$this->db->query("SELECT * FROM tbl_complaint_category WHERE IsActive = 1")->result_array();
+		$data['users']=$this->db->query("SELECT * FROM tbl_users")->result_array();
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','moment/moment.js'),
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.js'),
+		$this->Gen->get_script_url('custom_js','jquery.validate.js'),
+		$this->Gen->get_script_url('custom_js','complaint.js'),
+		);
+		$data['view_css']=array(
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.css'),
+		$this->Gen->get_script_url('','https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'),
+		
+        $this->Gen->get_script_url('plugin_components','select2/select2.min.css'),
+		);
+		//$maxItemID=$this->Common_model->getMaxItemID();
+		//$data['maxItemID']=$maxItemID;
+        $this->load_template('','complaints/add_complaint',$data);
+    }
+	
+	public function edit_complaint($id = "")
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$role_permissions  = explode(",",$this->session->userdata('permissions'));
+		if(!empty($role_permissions) && !in_array(171,$role_permissions)) {
+			$this->session->set_userdata(array('error_message' => "Access Denied!"));
+			$this->output->set_header("Location: " . base_url('home'), TRUE, 302);
+		}
+        $this->title = "Edit Complaint | ".$this->title;
+		$data['comp_category']=$this->db->query("SELECT * FROM tbl_complaint_category WHERE IsActive = 1")->result_array();
+		$data['users']=$this->db->query("SELECT * FROM tbl_users")->result_array();
+		$data['complaint']=$this->Base_model->getRow('tbl_complaints','','fld_id='.$id.'');
+
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','moment/moment.js'),
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.js'),
+		$this->Gen->get_script_url('custom_js','jquery.validate.js'),
+		$this->Gen->get_script_url('custom_js','complaint.js'),
+		);
+		$data['view_css']=array(
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.css'),
+		$this->Gen->get_script_url('','https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'),
+		
+        $this->Gen->get_script_url('plugin_components','select2/select2.min.css'),
+		);
+        $this->load_template('','complaints/editComplaint',$data);
+    }
+	public function my_complaints()
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$role_permissions  = explode(",",$this->session->userdata('permissions'));
+		if(!empty($role_permissions) && !in_array(171,$role_permissions)) {
+			$this->session->set_userdata(array('error_message' => "Access Denied!"));
+			$this->output->set_header("Location: " . base_url('home'), TRUE, 302);
+		}
+        $this->title = "My Complaint | ".$this->title;
+		$data['my_complaints']=$this->Complaint_model->myComplaints();
+	
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','moment/moment.js'),
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.js'),
+		$this->Gen->get_script_url('custom_js','jquery.validate.js'),
+		$this->Gen->get_script_url('custom_js','complaint.js'),
+		);
+		$data['view_css']=array(
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.css'),
+		$this->Gen->get_script_url('','https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'),
+		
+        $this->Gen->get_script_url('plugin_components','select2/select2.min.css'),
+		);
+		//$maxItemID=$this->Common_model->getMaxItemID();
+		//$data['maxItemID']=$maxItemID;
+        $this->load_template('','complaints/manage_mycomplaints',$data);
+    }
+	public function assigned_complaints()
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$role_permissions  = explode(",",$this->session->userdata('permissions'));
+		if(!empty($role_permissions) && !in_array(171,$role_permissions)) {
+			$this->session->set_userdata(array('error_message' => "Access Denied!"));
+			$this->output->set_header("Location: " . base_url('home'), TRUE, 302);
+		}
+        $this->title = "Assigned Complaint | ".$this->title;
+		$data['my_complaints']=$this->Complaint_model->assignedComplaints();
+	
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','moment/moment.js'),
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.js'),
+		$this->Gen->get_script_url('custom_js','jquery.validate.js'),
+		$this->Gen->get_script_url('custom_js','complaint.js'),
+		);
+		$data['view_css']=array(
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.css'),
+		$this->Gen->get_script_url('','https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'),
+		
+        $this->Gen->get_script_url('plugin_components','select2/select2.min.css'),
+		);
+		//$maxItemID=$this->Common_model->getMaxItemID();
+		//$data['maxItemID']=$maxItemID;
+        $this->load_template('','complaints/manage_assigned_complaints',$data);
+    }
+	public function view_complaint($id = "")
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$role_permissions  = explode(",",$this->session->userdata('permissions'));
+		if(!empty($role_permissions) && !in_array(171,$role_permissions)) {
+			$this->session->set_userdata(array('error_message' => "Access Denied!"));
+			$this->output->set_header("Location: " . base_url('home'), TRUE, 302);
+		}
+        $this->title = "View Complaint | ".$this->title;
+		$data['comp_category']=$this->db->query("SELECT * FROM tbl_complaint_category WHERE IsActive = 1")->result_array();
+		$data['users']=$this->db->query("SELECT * FROM tbl_users")->result_array();
+		$data['complaint']=$this->Base_model->getRow('tbl_complaints','','fld_id='.$id.'');
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','moment/moment.js'),
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.js'),
+		$this->Gen->get_script_url('custom_js','jquery.validate.js'),
+		$this->Gen->get_script_url('custom_js','complaint.js'),
+		);
+		$data['view_css']=array(
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.css'),
+		$this->Gen->get_script_url('','https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'),
+		
+        $this->Gen->get_script_url('plugin_components','select2/select2.min.css'),
+		);
+		//$maxItemID=$this->Common_model->getMaxItemID();
+		//$data['maxItemID']=$maxItemID;
+        $this->load_template('','complaints/view_mycomplaints',$data);
+    }
+	public function view_asigned_complaint($id = "")
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$role_permissions  = explode(",",$this->session->userdata('permissions'));
+		if(!empty($role_permissions) && !in_array(171,$role_permissions)) {
+			$this->session->set_userdata(array('error_message' => "Access Denied!"));
+			$this->output->set_header("Location: " . base_url('home'), TRUE, 302);
+		}
+        $this->title = "View Complaint | ".$this->title;
+		$data['comp_category']=$this->db->query("SELECT * FROM tbl_complaint_category WHERE IsActive = 1")->result_array();
+		$data['users']=$this->db->query("SELECT * FROM tbl_users")->result_array();
+		$data['complaint']=$this->Complaint_model->viewComplaints($id);
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','moment/moment.js'),
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.js'),
+		$this->Gen->get_script_url('custom_js','jquery.validate.js'),
+		$this->Gen->get_script_url('custom_js','complaint.js'),
+		);
+		$data['view_css']=array(
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.css'),
+		$this->Gen->get_script_url('','https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'),
+		
+        $this->Gen->get_script_url('plugin_components','select2/select2.min.css'),
+		);
+		//$maxItemID=$this->Common_model->getMaxItemID();
+		//$data['maxItemID']=$maxItemID;
+		
+        $this->load_template('','complaints/view_asigned_complaint',$data);
+    }
+	public function add_ajax_category(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$data=array();
+		$refinery=$this->Complaint_model->category_entry();
+		if($refinery){
+			$insert_id = $this->db->insert_id();
+			$data['category_id']=$insert_id;
+			$data['categories']=$this->Base_model->getAll('tbl_complaint_category');
+			$res=array('responce'=>'success',"message"=>"Complaint category added successfully.","data"=>$data);
+			echo json_encode($res);
+		}else{
+			$res=array('responce'=>'error',"message"=>"Complaint category not added.something went wrong.");
+			echo json_encode($res);
+		}
+		
+	}
+	public function addComplaint(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$purchase=$this->Complaint_model->complaint_entry();
+		echo json_encode($purchase);
+	}
+	public function UpdateComplaint(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$purchase=$this->Complaint_model->update_complaint_entry();
+		echo json_encode($purchase);
+	}
+	public function ResolveComplaint(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$purchase=$this->Complaint_model->resolve_complaint_entry();
+		echo json_encode($purchase);
+	}
+	public function deleteComplaint($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$role_permissions  = explode(",",$this->session->userdata('permissions'));
+		if(!empty($role_permissions) && !in_array(70,$role_permissions)) {
+			$this->session->set_userdata(array('error_message' => "Access Denied!"));
+			$this->output->set_header("Location: " . base_url('home'), TRUE, 302);
+		}
+		$responce=$this->Base_model->delete('tbl_complaints','fld_id ='.$id.'');
+        if($responce){
+			$this->session->set_userdata(array('success_message' => "Complaint deleted successfully"));
+			$this->output->set_header("Location: " . base_url() . 'Complaints/my_complaints', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Complaint not deleted.Something went wrong"));
+			$this->output->set_header("Location: " . base_url() . 'Complaints/my_complaints', TRUE, 302);
+		}
+	}
+    
+}
+?>

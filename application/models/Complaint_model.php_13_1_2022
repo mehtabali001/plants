@@ -1,0 +1,102 @@
+<?php
+
+if (!defined('BASEPATH'))
+    exit('No direct script access allowed');
+
+class Complaint_model extends CI_Model {
+
+    public function __construct() {
+        parent::__construct();
+    }
+	function category_entry(){
+		$user_id= $this->session->userdata('user_id');
+			$data = array(
+                'category_name'=> $this->input->post('category_name',TRUE)
+        );
+       return $this->db->insert('tbl_complaint_category',$data);
+	}
+	function myComplaints(){
+		$user_id= $this->session->userdata('user_id');
+		$this->db->select('c.*,u.fld_username,cc.category_name');
+		$this->db->from('tbl_complaints as c');
+		$this->db->join('tbl_users as u','u.fld_id=c.fld_complaint_to');
+		$this->db->join('tbl_complaint_category as cc','cc.id=c.fld_category');
+		$this->db->where('c.fld_user_id',$user_id);
+       return $this->db->get()->result_array();
+	}
+	function assignedComplaints(){
+		$user_id= $this->session->userdata('user_id');
+		$this->db->select('c.*,u.fld_username,cc.category_name');
+		$this->db->from('tbl_complaints as c');
+		$this->db->join('tbl_users as u','u.fld_id=c.fld_complaint_to');
+		$this->db->join('tbl_complaint_category as cc','cc.id=c.fld_category');
+		$this->db->where('c.fld_complaint_to',$user_id);
+       return $this->db->get()->result_array();
+	}
+	function viewComplaints($id){
+		
+		$this->db->select('c.*,u.fld_username,cc.category_name');
+		$this->db->from('tbl_complaints as c');
+		$this->db->join('tbl_users as u','u.fld_id=c.fld_complaint_to');
+		$this->db->join('tbl_complaint_category as cc','cc.id=c.fld_category');
+		$this->db->where('c.fld_id',$id);
+       return $this->db->get()->row_array();
+	}
+	function complaint_entry(){
+		
+		$data = array(
+            'fld_complain_subject' => $this->input->post('complain_subject',TRUE),
+            'fld_user_id'          => $this->session->userdata('user_id'),
+            'fld_category'          => $this->input->post('comp_category',TRUE),
+            'fld_complaint_to'          => $this->input->post('complain_to',TRUE),
+            'fld_description'        => $this->input->post('complain_description',TRUE)
+        );
+		  $responce=$this->db->insert('tbl_complaints', $data);
+		  if($responce){
+		  
+			$res=array('responce'=>'success',"message"=>"Complaint added successfully.");
+			return $res;
+		}else{
+			$res=array('responce'=>'error',"message"=>"Complaint not added.Something went wrong.");
+			return $res;
+		}
+	}
+	function update_complaint_entry(){
+		
+		$data = array(
+            'fld_complain_subject' => $this->input->post('complain_subject',TRUE),
+            'fld_user_id'          => $this->session->userdata('user_id'),
+            'fld_category'          => $this->input->post('comp_category',TRUE),
+            'fld_complaint_to'          => $this->input->post('complain_to',TRUE),
+            'fld_description'        => $this->input->post('complain_description',TRUE)
+        );
+		$this->db->where("fld_id",$_POST['edit_id']);
+		  $responce=$this->db->update('tbl_complaints', $data);
+		  if($responce){
+		  
+			$res=array('responce'=>'success',"message"=>"Complaint Updated successfully.");
+			return $res;
+		}else{
+			$res=array('responce'=>'error',"message"=>"Complaint not Updated.Something went wrong.");
+			return $res;
+		}
+	}
+	function resolve_complaint_entry(){
+		
+		$data = array(
+            'fld_reply' => $this->input->post('reply',TRUE),
+            'fld_status' => 1
+        );
+		 $this->db->where("fld_id",$_POST['edit_id']);
+		  $responce=$this->db->update('tbl_complaints', $data);
+		  if($responce){
+		  
+			$res=array('responce'=>'success',"message"=>"Complaint updated successfully.");
+			return $res;
+		}else{
+			$res=array('responce'=>'error',"message"=>"Complaint not Updated.Something went wrong.");
+			return $res;
+		}
+	}
+   
+}

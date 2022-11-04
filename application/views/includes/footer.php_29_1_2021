@@ -1,0 +1,33 @@
+
+ <footer class="footer text-center text-sm-left">
+                    &copy; 2020 ERP - Kotal Gas <span class="text-muted d-none d-sm-inline-block float-right">Product of Fast Tech Solution</span>
+                </footer><!--end footer-->
+            </div>
+            <!-- end page content -->
+        </div>
+        <!-- end page-wrapper -->
+
+        
+
+
+        <!-- jQuery  -->
+        <?php
+		$this->load->view('includes/layouts.js.php');
+		?>
+        <script>
+		$( document ).ready(function() {
+			$(".select2").select2({
+            width: '100%'
+        });
+		$('.datepicker').daterangepicker({
+			singleDatePicker: true,
+			showDropdowns: true,
+			minYear: 2010,
+			maxYear: parseInt(moment().format('YYYY'),10)
+		  });
+		});
+		
+		</script>
+    </body>
+
+</html>

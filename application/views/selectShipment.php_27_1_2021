@@ -1,0 +1,86 @@
+
+<?php if($shipments){
+	$unit_code='';
+	$i=1;
+	$fld_total_amount=0;
+	//foreach($shipments['products'] as $key => $purch){
+		//$key =$key +1;
+		$fld_total_amount =$fld_total_amount + ((int)$shipments['fld_quantity'] * (int)$shipments['fld_unit_price']);
+	?>
+	<tr>
+		<td class="text-center">
+		   <?php echo $i;?>
+		</td>
+
+	   <td class="text-center">
+		 <?php echo $shipments['fld_category'];?>
+		 <input type="hidden" id="fld_item" class="text-right form-control" name="fld_item" value="<?php echo $shipments['fld_product_id'];?>" style="text-align: left !important;">
+		</td>
+		
+			<td class="text-center">
+				
+				<select class="select2 form-control mb-3 custom-select fld_location_from" name="fld_location_from"  id="fld_location_to">
+				<option value=""></option>
+
+				<?php
+					
+				if($locations){
+					
+					foreach($locations as $loc){
+					?>
+				<option value="<?= $loc['fld_id'];?>" <?= ($shipments['fld_purchase_location_id'] == $loc['fld_id'])?'selected':'';?>><?= $loc['fld_location'];?></option>
+				<?php }}?>
+				
+				
+				</select>
+				
+			</td>
+			<td class="text-center">
+				
+				<input type="text" id="fld_shipment_from" class="text-right form-control" name="fld_shipment_from" value="<?php echo $shipments['fld_shipment'];?>" style="text-align: left !important;">
+			</td>
+		   
+
+			<td class="text-center">
+			   
+			   <input type="hidden" name="orignal_qty" id="orignal_qty" value="<?php echo (int)$shipments['fld_stock_qty']?>"/>
+			   <input type="text" id="fld_item_qty" class="text-right form-control item_quantity" data-rate="<?php echo (int)$shipments['fld_unit_price']?>" name="fld_item_qty" onchangeno="calculate_sum('mt');" onkeyup="calculate_sum('mt');" value="<?php echo (int)$shipments['fld_stock_qty']?>" style="text-align: left !important;">
+			</td>
+			<td>
+				
+				<input type="text" id="fld_item_weight" class="text-right form-control item_weight" data-rate="<?php echo (int)$shipments['fld_unit_price']?>" name="fld_item_weight" onchangeno="calculate_sum('kg');" onkeyup="calculate_sum('kg');" value="<?php echo (int)$shipments['fld_stock_qty'] * 1000;?>" style="text-align: left !important;">
+			</td>
+			<td>
+			<select required class="select2 form-control mb-3 custom-select fld_location_to" name="fld_location_to"  id="fld_location_to">
+				<option value=""></option>
+
+				<?php
+					
+				if($locations){
+					
+					foreach($locations as $loc){
+					?>
+				<option value="<?= $loc['fld_id'];?>" ><?= $loc['fld_location'];?></option>
+				<?php }}?>
+				
+				
+			</select>
+			</td>
+			<td>
+			<input type="text" id="fld_shipment_to" class="text-right form-control" name="fld_shipment_to" value="" required style="text-align: left !important;">
+			</td>
+			<td>
+				<?php echo (int)$shipments['fld_unit_price']?>
+				<input  type="hidden" id="fld_rate" class="text-right form-control" name="fld_rate" value="<?php echo (int)$shipments['fld_unit_price']?>" style="text-align: left !important;">
+				
+			</td>
+			<td>
+			<input readonly type="text" id="fld_amount" class="text-right form-control" name="fld_amount" value="<?php echo (int)$shipments['fld_stock_qty'] * (int)$shipments['fld_unit_price'];?>" style="text-align: left !important;">
+				
+			</td>
+	</tr>
+	<input type="hidden" name="stock_location_id" value="<?= $shipments['fld_id']?>"/>
+	<input type="hidden" name="purchase_id" value="<?= $shipments['fld_purchase_id']?>"/>
+	<?php
+	//}
+	}?>

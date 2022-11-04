@@ -1,0 +1,1127 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class Apis extends My_controller {
+	
+	function __construct() {
+        parent::__construct();
+		$this->load->model('Apis_model');
+		$this->load->model('Common_model');
+    }
+	
+	public function do_login() {
+	
+		//$this->form_validation->set_rules('emailadd', 'Email', 'required');
+		$this->form_validation->set_rules('username', 'Email / Username', 'required');
+		$this->form_validation->set_message('password', 'Password', 'required');
+        $error="";
+		$responce=array();
+		if ($this->form_validation->run() == FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+		} else {
+			$email = $this->input->post('username',TRUE);
+			//$email = $this->input->post('emailadd',TRUE);
+            $password = $this->input->post('password',TRUE);
+			if(filter_var($email, FILTER_VALIDATE_EMAIL)) {
+				$isemail = $email;
+				//return true;
+                //echo $isemail;exit;				
+			}else {
+				$isUsename = $email;
+				//echo $isUsename;exit;
+			}
+			
+			if(isset($isemail)){
+				$getqry = $this->db->query("SELECT * FROM tbl_users WHERE fld_email = '".$isemail."' AND fld_password = '".md5("kotal" . $password)."'")->row();
+			
+				if(empty ($getqry) || $getqry->fld_email != $isemail || $getqry->fld_password != md5("kotal" . $password)){
+				//if ($email == '' || $password == '' || $this->auth->login($email, $password) === FALSE) {
+					$error = "Email or password incorrect.";
+					
+				}
+			}else{
+				$getqry = $this->db->query("SELECT * FROM tbl_users WHERE fld_username = '".$isUsename."'  AND fld_password = '".md5("kotal" . $password)."'")->row();
+				if(empty ($getqry) || $getqry->fld_username != $isUsename || $getqry->fld_password != md5("kotal" . $password)){
+				//if ($email == '' || $password == '' || $this->auth->login($email, $password) === FALSE) {
+					$error = "Email or password incorrect.";
+				}
+			}
+			
+			
+			
+			
+            if ($error != '') {
+				
+				$this->send_response(500,'error',320, 'Email or password incorrect.');
+            } else {
+                
+                if($email == 'Superadmin' || $email == 'superadmin@kotalgas.com' ){
+    			    $responce=$this->auth_login($email, $password);
+					
+					$this->send_response(200,'success',332,'Login successfully.',$responce);
+					
+    			}else{
+				
+				$user_data = array(
+					'fld_email'        => $getqry->fld_email,
+					'fld_username'        => $getqry->fld_username,
+					'password' 		   => $password,
+                );
+               // $this->session->set_userdata($user_data);
+				$this->load->library('phpmailer');
+				//$getcode = $this->db->query("SELECT fld_username FROM tbl_users WHERE fld_email = '".$this->session->userdata('fld_email')."'")->row();
+				
+    		    $display_name = $getqry->fld_username;
+				//$data['emailaddress'] = $this->session->userdata('fld_email');
+				$username =$user_data['fld_username'];
+      			$email = $user_data['fld_email'];
+				$password = $user_data['password'];
+    //  		Generte OTP
+	            $code = rand(1000,9999);
+			    
+			    $update = $this->db->query("UPDATE tbl_users SET fld_OTP = '".$code."' WHERE fld_email = '".$email."' OR fld_username = '".$username."'");
+			    
+			    if($update){
+			    $email_temp = $this->db->query("SELECT * FROM tbl_email WHERE fld_id = '6'")->row();
+			    
+			    $message = $email_temp->fld_email_body;
+			    $message = str_replace('{OTP}', $code, $message);
+			    
+			    $message = str_replace('{user_name}', $username, $message);
+                	
+    			$support_email = $email;
+    	
+    			$this->phpmailer->IsMail();     
+     			$this->phpmailer->From   =   'noreply@mktechsol.com';
+     			$this->phpmailer->FromName  =  "H.Q. OFFICE";
+    			$this->phpmailer->IsHTML(true);
+     			$this->phpmailer->AddAddress($email); 
+     			$this->phpmailer->Subject  =   $email_temp->fld_subject;
+     			$this->phpmailer->Body  =   nl2br($message);
+     			$this->phpmailer->Send();
+     			$this->phpmailer->ClearAddresses();
+				
+                //$this->output->set_header("Location: " . base_url('home'), TRUE, 302);
+				//$this->output->set_header("Location: " . base_url() . 'Adminlogin/login_otp', TRUE, 302);
+				$this->send_response(200,'success',332,'OTP send to your email address.',$user_data);
+				}
+			}
+            }
+		}		
+	}
+	public function do_verifylogin(){
+		$this->form_validation->set_rules('code[]', 'OTP Code', 'required');
+		$fld_email=$this->input->post('fld_email',TRUE);
+		$fld_username=$this->input->post('fld_username',TRUE);
+		$password=$this->input->post('password',TRUE);
+		$error="";
+		
+		if ($this->form_validation->run() == FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+		} else {
+			$code = implode('',$this->input->post('code'));
+			
+			$getcode = $this->db->query("SELECT fld_OTP FROM tbl_users WHERE fld_email = '".$fld_email."' OR fld_username = '".$fld_username."'")->row();
+			$otp = $getcode->fld_OTP;
+			$email = $fld_email;
+			$password = $password;
+			//echo $email."<br>";
+			//echo $password;exit;
+			if($code == $otp ){
+				$responce=$this->auth_login($email, $password);
+				if(is_array($responce) && !empty($responce)){
+					$this->send_response(200,'success',332,'Login successfully.',$responce);
+				}else{
+					$this->send_response(500,'error',320, 'Invalid OTP Code. Try Again');
+				}
+			}else{
+				$this->send_response(500,'error',320, 'Invalid OTP Code. Try Again');
+			}
+		}
+	}
+	
+	public function auth_login($email,$password)
+    {
+        
+        $this->load->model('Users');
+        $this->load->model('Common_model');
+        $result = $this->Users->check_valid_user($email,$password);
+		
+       
+
+        if ($result)
+        {
+            $key = md5(time());
+            $key = str_replace("1", "z", $key);
+            $key = str_replace("2", "J", $key);
+            $key = str_replace("3", "y", $key);
+            $key = str_replace("4", "R", $key);
+            $key = str_replace("5", "Kd", $key);
+            $key = str_replace("6", "jX", $key);
+            $key = str_replace("7", "dH", $key);
+            $key = str_replace("8", "p", $key);
+            $key = str_replace("9", "Uf", $key);
+            $key = str_replace("0", "eXnyiKFj", $key);
+            $sid_web = substr($key, rand(0, 3), rand(28, 32));
+            
+            
+			$getpermissions = $this->Common_model->select_where_return_row('*','tbl_roles',array('role_id'=>$result[0]['fld_role']));
+			$getempid = $this->Common_model->select_where_return_row('*','tbl_users',array('emp_id'=>$result[0]['emp_id']));
+			$empactivestatus = $getempid->emp_id;
+			
+			
+			$permissions = $getpermissions->perm_issions;
+        			$mainmenu = $getpermissions->admin_menu;
+        			$sublevel = $getpermissions->admin_menu_sublevel;
+        			$sublevellinks = $getpermissions->admin_menu_group;
+                    
+                            
+                    $user_data = array(
+                        'sid_web'           => $sid_web,
+                        'isLogIn'           => true,
+                        'isAdmin'           => (($result[0]['fld_user_type'] == 1)?true:false),
+                        'user_id'           => $result[0]['fld_id'],
+                        'user_type'         => $result[0]['fld_user_type'],
+                        'user_name'        => $result[0]['fld_username'],
+                        'fld_email'         => $result[0]['fld_email'],
+                        'user_otp'          => $result[0]['fld_OTP'],
+                        'user_role'         => $result[0]['fld_role'],
+                        'emp_id'            => $result[0]['emp_id'],
+        				'mainmenu'          => $mainmenu,
+        				'sublevel'          => $sublevel,
+        				'sublevellinks'     => $sublevellinks,
+        				'permissions'       => $permissions,
+                    
+                    );
+			
+			if($empactivestatus == 0){
+				
+                return  $user_data;
+			}elseif($empactivestatus > 0){
+			    
+			    
+                
+                $getemployeestatus =	$this->Common_model->select_single_field('is_active','tbl_employees',array('email'=>$email));
+ 
+                if($getemployeestatus == 1){
+                   
+                    return  $user_data;
+			    }else{
+			        
+			        return FALSE;   
+			    }
+		}
+        }else{
+            return FALSE;
+        }
+    }
+    public function submit_forgot() {
+		$this->form_validation->set_rules('email', 'Email Address', 'required');
+		if ($this->form_validation->run() == FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+		} else {
+		    
+			$email = $this->input->post('email',TRUE);
+			$qry = $this->db->query("SELECT * FROM tbl_users WHERE fld_email = '".$email."'")->row();
+			if(!empty($qry->fld_email)){
+			$string_length 		= 	substr((md5(uniqid(rand(), 1))), 0,30);
+			$activation_link  	=	'<a href="'.base_url().'Adminlogin/Change_pass/'.$qry->fld_id.'">'.base_url().'Adminlogin/Change_pass/'.$qry->fld_id.'</a>';
+                
+    			$message   =   "Hi Please Click on the below link to reset your password"."\n";
+    			$message  .=   "Link: ".$activation_link."\n";
+			    $message  .=   "Thanks!";
+
+    		 // $support_email = settings('support_email'); 
+    			$support_email = $email;
+				$this->load->library('phpmailer');
+    			$this->phpmailer->IsMail();     
+    			$this->phpmailer->From   =   $support_email;
+    			$this->phpmailer->FromName  =  "Kotal ERP System";
+    			$this->phpmailer->IsHTML(true);
+    			$this->phpmailer->AddAddress($support_email); 
+    			$this->phpmailer->Subject  =   "Kotal ERP System";
+    			$this->phpmailer->Body  =   nl2br($message);
+    			$this->phpmailer->Send();
+    			$this->phpmailer->ClearAddresses();
+    			
+				$this->send_response(200,'success',332,'Please check your email inbox or spam/junk folder to choose your new password.');
+    			
+			}else{
+			    
+				$this->send_response(500,'error',500, 'Invalid Email!, Please enter your correct email address.');
+			}
+		}
+	}
+	function resetPassword()
+	{
+		$this->form_validation->set_rules('old_password','Old Password','trim|required');
+		$this->form_validation->set_rules('new_password','New Password','trim|required');
+		$this->form_validation->set_rules('confirm_password', 'Confirm Password', 'required|matches[new_password]');
+		
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+		} else {
+			$old_password = $this->input->post('old_password');
+			$user_id = $this->input->post('user_id');
+			$query = $this->Common_model->select_where('*','tbl_users',array('fld_id'=>$user_id,'fld_password'=>md5("kotal" . $old_password)));
+		
+			if($query->num_rows() > 0) {
+				$data['fld_password']		= 	md5("kotal" . $this->input->post('new_password'));
+				
+				
+				$this->Common_model->update_array(array('fld_id'=>$user_id),'tbl_users',$data);
+				
+				$this->send_response(200,'success',332,'Password has updated successfully');
+				
+				
+			} else{
+				$this->send_response(500,'error',500,'Old password is incorrect.');
+			}
+
+		}
+	}
+	public function purchReport(){
+		
+		$this->form_validation->set_rules('filter','Filter Type','trim|required');
+		$this->form_validation->set_rules('from_date','From Date','trim|required');
+		$this->form_validation->set_rules('to_date', 'To Date', 'trim|required');
+		
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+			
+		}else{
+			$purchase=$purchase=$this->Apis_model->purchase_filter();
+			if(!empty($purchase)){
+				$this->send_response(200,'success',332,'Purchase order',$purchase);
+			}else{
+				$this->send_response(500,'error',500, 'No data found.');
+			}
+		}
+		
+		
+	}
+	public function purchaseItemReport(){
+		$product_id=$this->input->post('item_id');
+		$condition="";
+		if($product_id == 1){
+			$condition="pd.fld_product_id IN (1)";
+		}else if($product_id == 2){
+			$condition="pd.fld_product_id IN (2)";
+		}else{
+			$condition="pd.fld_product_id NOT IN ('1','2')";
+		}
+		$purchase=$this->Apis_model->purchaseItemReport($condition);
+		if(!empty($purchase)){
+			$this->send_response(200,'success',332,'Item Purchase Report',$purchase);
+		}else{
+			$this->send_response(500,'error',500, 'No data found.');
+		}
+		
+	}
+	public function saleItemReport(){
+		$product_id=$this->input->post('item_id');
+		$condition="";
+		if($product_id == 1){
+			$condition="sd.fld_product_id IN (1)";
+		}else if($product_id == 2){
+			$condition="sd.fld_product_id IN (2)";
+		}else{
+			$condition="sd.fld_product_id NOT IN ('1','2')";
+		}
+		$sales=$this->Apis_model->saleItemReport($condition);
+		
+		if(!empty($sales)){
+			$this->send_response(200,'success',332,'Item Sale Report',$sales);
+		}else{
+			$this->send_response(500,'error',500, 'No data found.');
+		}
+		
+	}
+	public function navigation_report(){
+		
+		$product_id=$this->input->post('item_id');
+		$condition="";
+		if($product_id == 1){
+			$condition="nd.fld_product_id IN (1)";
+		}else if($product_id == 2){
+			$condition="nd.fld_product_id IN (2)";
+		}else{
+			$condition="nd.fld_product_id NOT IN ('1','2')";
+		}
+		$navigation=$this->Apis_model->navigation_report($condition);
+		
+		if(!empty($navigation)){
+			$this->send_response(200,'success',332,'Navigation Report',$navigation);
+		}else{
+			$this->send_response(500,'error',500, 'No data found.');
+		}
+
+	}
+	public function navigation_filter(){
+		
+		$this->form_validation->set_rules('filter','Filter Type','trim|required');
+		$this->form_validation->set_rules('from_date','From Date','trim|required');
+		$this->form_validation->set_rules('to_date', 'To Date', 'trim|required');
+		
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+			
+		}else{
+			$navigation=$this->Apis_model->navigation_filter();
+			if(!empty($navigation)){
+				$this->send_response(200,'success',332,'Navigation Report',$navigation);
+			}else{
+				$this->send_response(500,'error',500, 'No data found.');
+			}
+		}
+
+	}
+	public function sale_filter(){
+		
+		$this->form_validation->set_rules('filter','Filter Type','trim|required');
+		$this->form_validation->set_rules('from_date','From Date','trim|required');
+		$this->form_validation->set_rules('to_date', 'To Date', 'trim|required');
+		
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+			
+		}else{
+			$sales=$this->Apis_model->sale_filter();
+			if(!empty($sales)){
+				$this->send_response(200,'success',332,'Sales Report',$sales);
+			}else{
+				$this->send_response(500,'error',500, 'No data found.');
+			}
+		}
+	}
+	public function supplier_ledger_filter() {
+		
+		$this->form_validation->set_rules('from_date','From Date','trim|required');
+		$this->form_validation->set_rules('to_date', 'To Date', 'trim|required');
+		
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+			
+		}else{
+			$conditions="";
+			$account_id=$this->input->post('account_id');
+			$group_by='td.coa_id';
+			$select="coa.head_name as filter_text,td.coa_id as filter_value";
+			
+			$start=str_replace('/', '-', $this->input->post('from_date'));
+			$end=str_replace('/', '-', $this->input->post('to_date'));
+			$date="tm.date between '".date("Y-m-d",strtotime($start))."' AND '".date("Y-m-d",strtotime($end))."'";
+			$this->db->select('tm.id,'.$select);
+			
+			$this->db->from('tbl_transections_details as td');
+			
+			$this->db->join('tbl_transections_master as tm','tm.id=td.v_id');
+			
+			$this->db->join('tbl_coa as coa','coa.head_code=td.coa_id');
+			
+			$this->db->where($date);
+			$from = date("Y-m-d",strtotime($start));
+			if($account_id!='all'){
+				$this->db->where("td.coa_id",$account_id);
+				$op = $this->db->query("SELECT IFNULL(SUM(b.debit), 0)-IFNULL(SUM(b.credit), 0) as balance from tbl_transections_details as b, tbl_transections_master as a where b.coa_id = '$account_id' AND a.date < '$from' AND a.id = b.v_id")->row()->balance;
+			}else{
+				$this->db->like('td.coa_id', '101005', 'both');
+				$op = $this->db->query("SELECT IFNULL(SUM(b.debit), 0)-IFNULL(SUM(b.credit), 0) as balance from tbl_transections_details as b, tbl_transections_master as a where b.coa_id LIKE '%101005%' AND a.date < '$from' AND a.id = b.v_id")->row()->balance;
+			}
+			
+			$this->db->group_by($group_by);
+			
+			$ledger=$this->db->get()->result_array();
+			
+		
+			if($ledger){
+				foreach($ledger as $key => $ledg){
+					$ledgdet=$this->getLedgDetail($ledg['filter_value'],$group_by);
+					$ledger[$key]['detail']=$ledgdet;
+					$ledger[$key]['opening']=$op;
+				}
+			}
+			
+			if($ledger){
+				foreach($ledger as $keys => $ledge){
+					$total_credit=0;
+					$total_debit=0;
+					$balance=$ledge['opening'];
+					foreach($ledge['detail'] as $key => $ledgedet){
+						
+						$total_credit +=$ledgedet['credit'];
+						$total_debit +=$ledgedet['debit'];
+						$balance += $ledgedet['debit']-$ledgedet['credit'];
+						$ledge['detail'][$key]['total_credit'] =$total_credit;
+						$ledge['detail'][$key]['total_debit'] =$total_debit;
+						$ledge['detail'][$key]['balance'] = $balance;
+						$ledger[$keys]['detail']=$ledge['detail'];
+					}
+					
+				}
+			}
+			if(!empty($ledger)){
+				$this->send_response(200,'success',332,'Ledger Report',$ledger);
+			}else{
+				$this->send_response(500,'error',500, 'No data found.');
+			}
+        }
+    }
+	function getLedgDetail($id,$group_by){
+        
+       
+        $start=str_replace('/', '-', $this->input->post('from_date'));
+		$end=str_replace('/', '-', $this->input->post('to_date'));
+		
+		$date="&& tm.date between '".date("Y-m-d",strtotime($start))."' AND '".date("Y-m-d",strtotime($end))."'";
+	    return $this->db->query("SELECT td.*, tm.type, tm.type_id, tm.date FROM tbl_transections_details AS td JOIN tbl_transections_master AS tm ON tm.id=td.v_id AND $group_by = '$id' AND tm.post_status = 0 $date ORDER BY tm.date, td.id")->result_array();
+    
+        
+    }
+	public function get_supplier_list()
+	{
+		$supplier_list = $this->db->query("SELECT * FROM `tbl_coa` WHERE head_code LIKE '%101005%' and head_code != '101005' order by head_name")->result_array();
+		if(!empty($supplier_list)){
+				$this->send_response(200,'success',332,'Supplier List',$supplier_list);
+			}else{
+				$this->send_response(500,'error',500, 'No data found.');
+			}
+		
+	}
+	public function get_customer_list()
+	{
+		$customer_list = $this->db->query("SELECT * FROM `tbl_coa` WHERE head_code LIKE '%101007%' and head_code != '101007' order by head_name")->result_array();
+		if(!empty($customer_list)){
+			$this->send_response(200,'success',332,'Customer List',$customer_list);
+		}else{
+			$this->send_response(500,'error',500, 'No data found.');
+		}
+		
+	}
+	public function customer_ledger_filter() {
+		
+		$this->form_validation->set_rules('from_date','From Date','trim|required');
+		$this->form_validation->set_rules('to_date', 'To Date', 'trim|required');
+		
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+			
+		}else{
+		$conditions="";
+		$account_id=$this->input->post('account_id');
+		$group_by='td.coa_id';
+		$select="coa.head_name as filter_text,td.coa_id as filter_value";
+		
+		$start=str_replace('/', '-', $this->input->post('from_date'));
+		$end=str_replace('/', '-', $this->input->post('to_date'));
+		$date="tm.date between '".date("Y-m-d",strtotime($start))."' AND '".date("Y-m-d",strtotime($end))."'";
+		$this->db->select('tm.id,'.$select);
+		
+		$this->db->from('tbl_transections_details as td');
+		
+		$this->db->join('tbl_transections_master as tm','tm.id=td.v_id');
+		
+		$this->db->join('tbl_coa as coa','coa.head_code=td.coa_id');
+		
+		$this->db->where($date);
+		$from = date("Y-m-d",strtotime($start));
+		if($account_id!='all'){
+		    $this->db->where("td.coa_id",$account_id);
+		    $op = $this->db->query("SELECT IFNULL(SUM(b.debit), 0)-IFNULL(SUM(b.credit), 0) as balance from tbl_transections_details as b, tbl_transections_master as a where b.coa_id = '$account_id' AND a.date < '$from' AND a.id = b.v_id")->row()->balance;
+		}else{
+		    $this->db->like('td.coa_id', '101007', 'both');
+		    $op = $this->db->query("SELECT IFNULL(SUM(b.debit), 0)-IFNULL(SUM(b.credit), 0) as balance from tbl_transections_details as b, tbl_transections_master as a where b.coa_id LIKE '%101007%' AND a.date < '$from' AND a.id = b.v_id")->row()->balance;
+		}
+		
+		$this->db->group_by($group_by);
+		
+	    $ledger=$this->db->get()->result_array();
+		
+	    
+	    if($ledger){
+			foreach($ledger as $key => $ledg){
+				$ledgdet=$this->getLedgDetail($ledg['filter_value'],$group_by);
+				$ledger[$key]['detail']=$ledgdet;
+				$ledger[$key]['opening']=$op;
+			}
+		}
+		
+		// $data['ledger'] = $ledger;
+		// $data['from'] = $from;
+		// $count=count($ledger);
+		
+		if(!empty($ledger)){
+				$this->send_response(200,'success',332,'Customer Ledger Report',$ledger);
+			}else{
+				$this->send_response(500,'error',500, 'No data found.');
+			}
+		}
+        
+    }
+    public function accounts_ledger_filter() {
+		
+		
+		$this->form_validation->set_rules('account_id','Account','trim|required');
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+			
+		}else{
+			$conditions="";
+			$account_id=$this->input->post('account_id');
+			$group_by='td.coa_id';
+			$select="coa.head_name as filter_text,td.coa_id as filter_value";
+			
+			$start=str_replace('/', '-', $this->input->post('from_date'));
+			$end=str_replace('/', '-', $this->input->post('to_date'));
+			$date="tm.date between '".date("Y-m-d",strtotime($start))."' AND '".date("Y-m-d",strtotime($end))."'";
+			$this->db->select('tm.id,'.$select);
+			
+			$this->db->from('tbl_transections_details as td');
+			
+			$this->db->join('tbl_transections_master as tm','tm.id=td.v_id');
+			
+			$this->db->join('tbl_coa as coa','coa.head_code=td.coa_id');
+			
+			$this->db->where($date);
+			$this->db->where("td.coa_id",$account_id);
+			$this->db->where("tm.post_status",0);
+
+			$this->db->group_by($group_by);
+			
+			$ledger=$this->db->get()->result_array();
+		
+			$from = date("Y-m-d",strtotime($start));
+			$op = $this->db->query("SELECT IFNULL(SUM(b.debit), 0)-IFNULL(SUM(b.credit), 0) as balance from tbl_transections_details as b, tbl_transections_master as a where b.coa_id = '$account_id' AND a.date < '$from' AND a.id = b.v_id")->row()->balance;
+			
+			if($ledger){
+				foreach($ledger as $key => $ledg){
+					$ledgdet=$this->getLedgDetail($ledg['filter_value'],$group_by);
+					$ledger[$key]['detail']=$ledgdet;
+					$ledger[$key]['opening']=$op;
+				}
+			}
+		    if($ledger){
+				foreach($ledger as $keys => $ledge){
+					$total_credit=0;
+					$total_debit=0;
+					$balance=$ledge['opening'];
+					foreach($ledge['detail'] as $key => $ledgedet){
+						
+						$total_credit +=$ledgedet['credit'];
+						$total_debit +=$ledgedet['debit'];
+						$balance += $ledgedet['debit']-$ledgedet['credit'];
+						$ledge['detail'][$key]['total_credit'] =$total_credit;
+						$ledge['detail'][$key]['total_debit'] =$total_debit;
+						$ledge['detail'][$key]['balance'] = $balance;
+						$ledger[$keys]['detail']=$ledge['detail'];
+					}
+					
+				}
+			}
+			if(!empty($ledger)){
+				$this->send_response(200,'success',332,'Account Ledger Report',$ledger);
+			}else{
+				$this->send_response(500,'error',500, 'No data found.');
+			}
+		}
+	}
+	public function items_ledger_filter() {
+		
+		$this->form_validation->set_rules('item_type','Item Type','trim|required');
+		$this->form_validation->set_rules('shipment_id','Shipment','trim|required');
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+			
+		}else{
+		$conditions="";
+		$item_type=$this->input->post('item_type');
+		$sitem_type=$this->input->post('sitem_type');
+		$shipment_id=$this->input->post('shipment_id');
+		
+		if($item_type==1){
+		    $group_by='pd.fld_product_id';
+		    $select="cat.fld_category as filter_text,pd.fld_product_id as filter_value";
+		}else{
+		    $group_by='pd.fld_subproduct_id';
+		    $select="subcat.fld_subcategory as filter_text,pd.fld_subproduct_id as filter_value";
+		}
+		
+		
+		$this->db->select($select);
+		
+		$this->db->from('tbl_purchase_detail as pd');
+		
+		$this->db->join('tbl_purchase','tbl_purchase.fld_id=pd.fld_purchase_id');
+		
+		if($item_type==1){
+		    $this->db->join('tbl_category as cat','cat.fld_id=pd.fld_product_id');
+		}else{
+		    $this->db->join('tbl_subcategory as subcat','subcat.fld_subcid=pd.fld_subproduct_id');
+		}
+		
+		
+		if($item_type==1){
+		    $this->db->where("pd.fld_product_id",$item_type);
+		}else{
+		    if($sitem_type=='all'){
+		        $this->db->where("pd.fld_product_id",$item_type);
+		    }else{
+		         $this->db->where("pd.fld_subproduct_id",$sitem_type);
+		    }
+		   
+		}
+		$this->db->where("tbl_purchase.fld_shipment",$shipment_id);
+	
+		
+		
+		
+		$this->db->group_by($group_by);
+		
+	    $ledger=$this->db->get()->result_array();
+	    
+	    
+		
+	
+		if($ledger){
+			foreach($ledger as $key => $ledg){
+			    $ledgerDetailArray = array();
+				$purchase = $this->getPurchseLedgDetail($ledg['filter_value'], $group_by, $shipment_id);
+				$navigation = $this->getNavLedgDetail($ledg['filter_value'], $group_by, $shipment_id);
+				$sale = $this->getSaleLedgDetail($ledg['filter_value'], $group_by, $shipment_id);
+				foreach($purchase as $purchsedet){
+				    $ledgerDetail = array();
+				    $ledgerDetail['vr_no'] = $purchsedet['fld_voucher_no'];
+				    $ledgerDetail['date'] =  $purchsedet['fld_purchase_date'];
+				    $ledgerDetail['account'] =  explode('/', $purchsedet['fld_shipment'])[0].'/'. explode('/', $purchsedet['fld_shipment'])[1];
+				    $ledgerDetail['remarks'] =  '-';
+				    $ledgerDetail['fld_shipment'] =  $purchsedet['fld_shipment'];
+				    $ledgerDetail['location'] =  $purchsedet['fld_location'];
+				    $ledgerDetail['qty_in'] =  0;
+				    
+				    if($purchsedet['fld_product_id']==1){
+				        $ledgerDetail['weight_in'] =  $purchsedet['fld_quantity']*1000;
+				    }else{
+				        $ledgerDetail['weight_in'] =  0;
+				    }
+				    
+				    $ledgerDetail['qty_out'] =  0;
+				    $ledgerDetail['weight_out'] =  0;
+				    
+				    
+				    $ledgerDetail['created'] = $purchsedet['fld_created_date'];
+				    $ledgerDetailArray[]=$ledgerDetail;
+				    
+				    
+				}
+				
+			    foreach($navigation as $navdet){
+				    $ledgerDetail = array();
+				    $ledgerDetail['vr_no'] = sprintf(' NV-%04d ', $navdet['fld_id']);
+				    $ledgerDetail['date'] =  $navdet['fld_date'];
+				    $ledgerDetail['account'] =  '-';
+				    $ledgerDetail['remarks'] =  $navdet['fld_remarks'];
+				    $ledgerDetail['location'] =  $this->db->query("select * from tbl_locations where fld_id = '{$navdet['fld_location_from']}'")->row()->fld_location;
+				    $ledgerDetail['qty_in'] =  0;
+				    $ledgerDetail['qty_out'] =  0;
+				    
+				    if($navdet['fld_product_id']==1){
+				        $ledgerDetail['weight_out'] =  $navdet['fld_qty']*1000;
+				    }else{
+				        $ledgerDetail['weight_out'] =  0;
+				    }
+				    
+				    
+				    $ledgerDetail['weight_in'] =  0;
+				    
+				    
+				    $ledgerDetail['created'] = $navdet['fld_created_date'];
+				    $ledgerDetailArray[]=$ledgerDetail;
+				    
+				    
+				}
+				
+				foreach($navigation as $navdet){
+				    $ledgerDetail = array();
+				    $ledgerDetail['vr_no'] = sprintf(' NV-%04d ', $navdet['fld_id']);
+				    $ledgerDetail['date'] =  $navdet['fld_date'];
+				    $ledgerDetail['account'] =  '-';
+				    $ledgerDetail['remarks'] =  $navdet['fld_remarks'];
+				    $ledgerDetail['location'] =  $this->db->query("select * from tbl_locations where fld_id = '{$navdet['fld_location_to']}'")->row()->fld_location;
+				    $ledgerDetail['qty_out'] =  0;
+				    $ledgerDetail['qty_in'] =  0;
+				    
+				    if($navdet['fld_product_id']==1){
+				        $ledgerDetail['weight_in'] =  $navdet['fld_qty']*1000;
+				    }else{
+				        $ledgerDetail['weight_in'] =  0;
+				    }
+				    
+				    
+				    $ledgerDetail['weight_out'] =  0;
+				    
+				    
+				    $ledgerDetail['created'] = $navdet['fld_created_date'];
+				    $ledgerDetailArray[]=$ledgerDetail;
+				    
+				    
+				}
+				
+				foreach($sale as $saledet){
+				    $ledgerDetail = array();
+				    $ledgerDetail['vr_no'] = $saledet['fld_voucher_no'];
+				    $ledgerDetail['date'] =  $saledet['fld_sale_date'];
+				    $ledgerDetail['account'] =  $saledet['fld_company_name'];
+				    $ledgerDetail['remarks'] =  $this->db->select('*')->from('tbl_subcategory')->where('fld_subcid', $saledet['fld_subproduct_id'])->get()->row()->fld_subcategory;
+				    $ledgerDetail['location'] =  $saledet['fld_location'];
+				    $ledgerDetail['qty_in'] =  0;
+				    
+				    if($saledet['fld_product_id']==1){
+				        $ledgerDetail['weight_out'] =  $saledet['fld_weight'];
+				        $ledgerDetail['qty_out'] =  $saledet['fld_quantity'];
+				    }else{
+				        $ledgerDetail['weight_out'] =  0;
+				        $ledgerDetail['qty_out'] =  $saledet['fld_quantity'];
+				    }
+				    
+				    
+				    $ledgerDetail['weight_in'] =  0;
+				    
+				    
+				    $ledgerDetail['created'] = $saledet['fld_created_date'];
+				    $ledgerDetailArray[]=$ledgerDetail;
+				    
+				    
+				}
+				array_multisort(array_map('strtotime',array_column($ledgerDetailArray,'created')),
+                SORT_ASC,
+                array_column($ledgerDetailArray,'weight_in'), SORT_ASC,
+                $ledgerDetailArray);
+                
+                
+				$ledger[$key]['detail']=$ledgerDetailArray;
+			}
+		}
+		
+		$total_qty_in=0;
+		$total_qty_out=0;
+		$total_weight_in=0;
+		$total_weight_out=0;
+		$balance1=0;
+		$balance2=0;
+		if($ledger){
+			foreach($ledger as $keyj => $led){
+				foreach($led['detail'] as $key => $ledgedet){
+					$total_qty_in +=$ledgedet['qty_in'];
+				    $total_qty_out +=$ledgedet['qty_out'];
+				    $total_weight_in +=$ledgedet['weight_in'];
+				    $total_weight_out +=$ledgedet['weight_out'];
+				    $balance1 = $balance1+$ledgedet['qty_in']-$ledgedet['qty_out'];
+				    $balance2 = $balance2+$ledgedet['weight_in']-$ledgedet['weight_out'];
+					$ledger[$keyj]['detail'][$key]['qtyBalance']=$balance1;
+					$ledger[$keyj]['detail'][$key]['weightBalance']=$balance2;
+				
+				}
+				$ledger[$keyj]['qtyBalancetotal']=$balance1;
+				$ledger[$keyj]['weightBalancetotal']=$balance2;
+			}
+		}
+		if(!empty($ledger)){
+				$this->send_response(200,'success',332,'Item Ledger Report',$ledger);
+			}else{
+				$this->send_response(500,'error',500, 'No data found.');
+			}
+	}
+        
+    }
+	function getPurchseLedgDetail($id, $group_by, $shipment_id){
+	    $this->db->select('tbl_purchase.*,tbl_suppliers.fld_supplier_code,tbl_suppliers.fld_company_name,tbl_suppliers.fld_supplier_name,tbl_locations.fld_location,pd.fld_product_id,pd.fld_subproduct_id,pd.fld_quantity');
+        $this->db->from('tbl_purchase');
+        $this->db->join('tbl_purchase_detail as pd','pd.fld_purchase_id=tbl_purchase.fld_id');
+        $this->db->join('tbl_suppliers','tbl_suppliers.fld_id=tbl_purchase.fld_supplier_id');
+        $this->db->join('tbl_locations','tbl_locations.fld_id=tbl_purchase.fld_location_id');
+        $this->db->where('tbl_purchase.fld_isdeleted',0);
+        $this->db->where($group_by,$id);
+		$this->db->where("tbl_purchase.fld_shipment",$shipment_id);
+        return $this->db->get()->result_array();
+    }
+	function getNavLedgDetail($id, $group_by, $shipment_id){
+	    $this->db->select('nd.*, tbl_navigations.fld_remarks, tbl_navigations.fld_date, tbl_navigations.fld_location_from, tbl_navigations.fld_location_to, tbl_navigations.fld_created_date, tbl_navigations.fld_id');
+        $this->db->from('tbl_navigations_details as nd');
+        $this->db->join('tbl_navigations','tbl_navigations.fld_id=nd.fld_navigation_id');
+        $this->db->where('tbl_navigations.fld_isdeleted',0);
+        if($group_by == 'pd.fld_product_id'){
+            $group_by = 'nd.fld_product_id';
+        }else if($group_by == 'pd.fld_subproduct_id'){
+            $group_by = 'nd.fld_subproduct_id';
+        }
+        $this->db->where($group_by,$id);
+		$this->db->where("nd.fld_shipment_from",$shipment_id);
+        return $this->db->get()->result_array();
+    }
+	function getSaleLedgDetail($id, $group_by, $shipment_id){
+	    $this->db->select('sd.*, tbl_sale.fld_voucher_no, tbl_sale.fld_sale_date, tbl_sale.fld_location_id, tbl_sale.fld_customer_id, tbl_sale.fld_created_date,tbl_customers.fld_company_name,tbl_locations.fld_location');
+        $this->db->from('tbl_sale_detail as sd');
+        $this->db->join('tbl_sale','tbl_sale.fld_id=sd.fld_sale_id');
+        $this->db->join('tbl_customers','tbl_customers.fld_id=tbl_sale.fld_customer_id');
+        $this->db->join('tbl_locations','tbl_locations.fld_id=tbl_sale.fld_location_id');
+        $this->db->where('tbl_sale.fld_isdeleted',0);
+        if($group_by == 'pd.fld_product_id'){
+            $group_by = 'sd.fld_product_id';
+        }else if($group_by == 'pd.fld_subproduct_id'){
+            $group_by = 'sd.fld_subproduct_id';
+        }
+        $this->db->where($group_by,$id);
+		$this->db->where("sd.fld_shipment",$shipment_id);
+        return $this->db->get()->result_array();
+    }
+    
+    public function getIncomeReport() {
+			
+			
+		$this->form_validation->set_rules('from_date','From Date','trim|required');
+		$this->form_validation->set_rules('to_date','To Date','trim|required');
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+			
+		}else{
+			$start=date('Y-m-d', strtotime(str_replace('/', '-', $this->input->post('from_date'))));
+			$end=date('Y-m-d', strtotime(str_replace('/', '-', $this->input->post('to_date'))));
+			$data['start_date'] = $start;
+			$data['end_date'] = $end;
+			
+			$data['saleofproducts'] = $this->db->query("SELECT IFNULL(SUM(fld_total_discount), 0) discount, IFNULL(SUM(fld_grand_total_amount), 0) amount FROM `tbl_sale` WHERE DATE(fld_sale_date) >= '$start' && DATE(fld_sale_date) <= '$end'")->row();
+			
+			$cgsOpeningStock = $this->db->query("SELECT IFNULL(SUM(a.debit), 0)-IFNULL(SUM(a.credit), 0) as balance FROM tbl_transections_details as a, tbl_transections_master as b WHERE b.id = a.v_id && b.date < '$start' && a.coa_id = '101003001'")->row()->balance;
+			
+			$cgsPurchase = $this->db->query("SELECT IFNULL(SUM(a.debit), 0) as debit FROM tbl_transections_details as a, tbl_transections_master as b WHERE b.id = a.v_id && b.date >= '$start' && b.date <= '$end' && a.coa_id = '101003001'")->row()->debit;
+			
+			$cgsClosingStock = $this->db->query("SELECT IFNULL(SUM(a.debit), 0)-IFNULL(SUM(a.credit), 0) as balance FROM tbl_transections_details as a, tbl_transections_master as b WHERE b.id = a.v_id && a.coa_id = '101003001'")->row()->balance;
+			
+			$data['costOfGoodsSold'] = $cgsOpeningStock+$cgsPurchase-$cgsClosingStock;
+			
+			$data['OfficeExpenses'] = $this->db->query("SELECT IFNULL(SUM(a.unit_price), 0) amount FROM tbl_expense_detail a, tbl_expenses b WHERE b.id = a.fld_expense_id && DATE(b.date_added) >= '$start' && DATE(b.date_added) <= '$end' && a.expense_type = '1'")->row()->amount;
+			$data['MessExpenses'] = $this->db->query("SELECT IFNULL(SUM(a.unit_price), 0) amount FROM tbl_expense_detail a, tbl_expenses b WHERE b.id = a.fld_expense_id && DATE(b.date_added) >= '$start' && DATE(b.date_added) <= '$end' && a.expense_type = '2'")->row()->amount;
+			$data['StaffSalaries'] = $this->db->query("SELECT IFNULL(SUM(a.debit), 0) as debit FROM tbl_transections_details as a, tbl_transections_master as b WHERE b.id = a.v_id && b.date >= '$start' && b.date <= '$end' && a.coa_id LIKE '%101006%'")->row()->debit;
+			
+			if(!empty($data)){
+				$this->send_response(200,'success',332,'Income Report',$data);
+			}else{
+				$this->send_response(500,'error',500, 'No data found.');
+			}
+			
+		}
+        
+    }
+	 public function getTrailBalance() {
+		
+		$this->form_validation->set_rules('from_date','From Date','trim|required');
+		$this->form_validation->set_rules('to_date','To Date','trim|required');
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+			
+		}else{
+			$start=date('Y-m-d', strtotime(str_replace('/', '-', $this->input->post('from_date'))));
+			$end=date('Y-m-d', strtotime(str_replace('/', '-', $this->input->post('to_date'))));
+			
+			$level = $this->input->post('level');
+			
+			$data['start_date'] = $start;
+			$data['end_date'] = $end;
+			
+			$data['accounts'] = $this->db->query("SELECT * FROM tbl_coa WHERE head_level = '$level' order by head_code")->result_array();
+			
+			if(!empty($data)){
+				$this->send_response(200,'success',332,'Trial Balance Report',$data);
+			}else{
+				$this->send_response(500,'error',500, 'No data found.');
+			}
+		}
+        
+    }
+	public function gain_lossfilter(){
+		$this->form_validation->set_rules('filter','Filter','trim|required');
+		$this->form_validation->set_rules('from_date','From Date','trim|required');
+		$this->form_validation->set_rules('to_date','To Date','trim|required');
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+			
+		}else{
+		$data['gain_loss']=$gain_loss=$this->Apis_model->gain_loss_filter();
+		if(!empty($data)){
+				$this->send_response(200,'success',332,'Gain Loss',$data);
+			}else{
+				$this->send_response(500,'error',500, 'No data found.');
+			}
+		}
+		
+	}
+	public function employee_filter(){
+		$this->form_validation->set_rules('filter','Filter','trim|required');
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+			
+		}else{
+		$data['employees']=$employees=$this->Apis_model->employee_filter();
+		if(!empty($data)){
+				$this->send_response(200,'success',332,'Employee Report',$data);
+			}else{
+				$this->send_response(500,'error',500, 'No data found.');
+			}
+		}
+		
+	}
+	public function payrol_filter(){
+	    
+		$this->form_validation->set_rules('year','Year','trim|required');
+		$this->form_validation->set_rules('filter','Filter','trim|required');
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+			
+		}else{
+		$conditions="";
+		$filter=$_POST['filter'];
+		$month=$_POST['month'];
+		$year=$_POST['year'];
+		//$type = $_POST['type'];
+		switch ($filter) {
+		  case "employeewise":
+			$group_by = "tbl_payroll.user_id";
+			$select="tbl_employees.full_name as filter_text,tbl_payroll.user_id as filter_value";
+			break;
+		  case "designationwise":
+			$group_by = "tbl_payroll.designation";
+			$select="tbl_designation.designation_name as filter_text,tbl_payroll.designation as filter_value";
+			break;
+			case "plantwise":
+			$group_by = "tbl_payroll.plants";
+			$select="tbl_locations.fld_location as filter_text,tbl_payroll.plants as filter_value";
+			break;
+		}
+		$date="tbl_payroll.month IN ('" .implode("','", $month  ) . "') AND year = '$year'";
+		$this->db->select('tbl_payroll.id,'.$select.'');
+		$this->db->from('tbl_payroll');
+
+		$this->db->join('tbl_employees','	tbl_employees.id=tbl_payroll.user_id');
+		$this->db->join('tbl_designation','tbl_designation.id=tbl_payroll.designation');
+		$this->db->join('tbl_locations','tbl_locations.fld_id=tbl_payroll.plants');
+		$this->db->where("tbl_payroll.salary_status", 1);
+		$this->db->where($date);
+		$this->db->group_by($group_by);
+		$salary=$this->db->get()->result_array();
+
+		if($salary){
+			foreach($salary as $key => $seler){
+				$selerdet=$this->getSalaryDetail($seler['filter_value'],$group_by, $date);
+				$salary[$key]['detail']=$selerdet;
+			}
+		}
+		$data['salary'] = $salary;
+		$data['filter'] = $filter;
+		//$data['type'] = $type;
+		$this->send_response(200,'success',332,'Employee Report',$data);
+		}
+		
+	}
+	function getSalaryDetail($id,$group_by, $date){
+      //$date="tbl_purchase.fld_purchase_date between '".date("Y-m-d",strtotime($start))." 00:00:00' AND '".date("Y-m-d",strtotime($end))." 23:59:00'";
+		$this->db->select('tbl_payroll.*,tbl_employees.full_name,tbl_employees.employee_code,tbl_designation.designation_name,tbl_locations.fld_location');
+		$this->db->from('tbl_payroll');
+		$this->db->join('tbl_employees','	tbl_employees.id=tbl_payroll.user_id');
+		$this->db->join('tbl_designation','tbl_designation.id=tbl_payroll.designation');
+		$this->db->join('tbl_locations','tbl_locations.fld_id=tbl_payroll.plants');
+		$this->db->where("tbl_payroll.salary_status", 1);
+		$this->db->where($date);
+		$this->db->where($group_by,$id);
+		return $this->db->get()->result_array();
+// 		$this->db->last_query();
+	}
+	public function expence_filter(){
+		$this->form_validation->set_rules('from_date','From date','trim|required');
+		$this->form_validation->set_rules('to_date','To date','trim|required');
+		$this->form_validation->set_rules('filter','Filter','trim|required');
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+			
+		}else{
+		$data['expense'] = $expense=$this->Apis_model->expense_filter();
+		if(!empty($expense)){
+			$this->send_response(200,'success',332,'Expence Report',$expense);
+		}else{
+			$this->send_response(500,'error',500, 'No data found.');
+		}
+		}
+	}
+	public function get_account_list()
+	{
+		$customer_list = $this->db->query("SELECT * FROM `tbl_coa` WHERE head_code LIKE '%101007%' and head_code != '101007' order by head_name")->result_array();
+		$accounts_list = $this->db->query("SELECT * FROM `tbl_coa` WHERE head_level = '3' AND head_code NOT LIKE '%401007%'")->result_array();
+		if(!empty($accounts_list)){
+			$this->send_response(200,'success',332,'Account List',$accounts_list);
+		}else{
+			$this->send_response(500,'error',500, 'No data found.');
+		}
+		
+	}
+	public function profitandlossfilter(){
+		$this->form_validation->set_rules('from_date','From date','trim|required');
+		$this->form_validation->set_rules('to_date','To date','trim|required');
+		$this->form_validation->set_rules('filter','Filter','trim|required');
+		if($this->form_validation->run() === FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+			
+		}else{
+		$sales=$this->Apis_model->profitandloss_filter();
+		if(!empty($sales)){
+			$this->send_response(200,'success',332,'Profit and Loss Report',$sales);
+		}else{
+			$this->send_response(500,'error',500, 'No data found.');
+		}
+		}
+	}
+	public function itemList(){
+		$product_items=$this->Apis_model->getAllProducts('tbl_category');
+		
+		if(!empty($product_items)){
+			$this->send_response(200,'success',332,'Product item list',$product_items);
+		}else{
+			$this->send_response(500,'error',500, 'No data found.');
+		}
+		
+	}
+	public function getShipmentsLedger(){
+        $item_id = $this->input->post('item_id');
+        $sitem_id = $this->input->post('sub_item_id');
+        
+        if($item_id == 1){
+            $shipments = $this->db->query("SELECT b.fld_shipment FROM tbl_purchase_detail as a, tbl_purchase as b WHERE b.fld_id = a.fld_purchase_id && a.fld_product_id = '1' GROUP by fld_shipment")->result_array();
+        }else{
+            if($sitem_id =='all'){
+                $shipments =  $this->db->query("SELECT b.fld_shipment FROM tbl_purchase_detail as a, tbl_purchase as b WHERE b.fld_id = a.fld_purchase_id && a.fld_product_id = '$item_id' GROUP by fld_shipment")->result_array();
+            }else{
+                $shipments =  $this->db->query("SELECT b.fld_shipment FROM tbl_purchase_detail as a, tbl_purchase as b WHERE b.fld_id = a.fld_purchase_id && a.fld_product_id = '$item_id' && a.fld_subproduct_id = '$sitem_id' GROUP by fld_shipment")->result_array();
+            }
+        }
+       
+        if(!empty($shipments)){
+			$this->send_response(200,'success',332,'Shipment ledger list',$shipments);
+		}else{
+			$this->send_response(500,'error',500, 'No data found.');
+		}
+        
+    }
+	public function send_response($header_status, $type, $status, $message, $data = array()) {
+        return $this->output
+        ->set_content_type('application/json')
+        ->set_status_header($header_status)
+        ->set_output(json_encode(array(
+            'type' => $type,
+            'status' => $status,
+            'message' => $message,
+            'data' => $data
+        )));
+    }
+ 
+}
+	
+	
+	

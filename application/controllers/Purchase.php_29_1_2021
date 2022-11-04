@@ -1,0 +1,273 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class Purchase extends My_controller {
+	
+	function __construct() {
+        parent::__construct();
+        $this->load->model('Purchase_model');
+        $this->load->model('Suplier_model');
+    }
+	
+	public function index()
+    {
+		
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+        $this->title = "Add Purchase | ".$this->title;
+		$data['supplier']=$this->Base_model->getAll('tbl_suppliers');
+		$data['banks']=$this->Base_model->getAll('tbl_banks');
+		$data['category']=$this->Purchase_model->getAllProducts('tbl_category');
+		$data['locations']=$this->Base_model->getAll('tbl_locations');
+		$data['units']=$this->Base_model->getAll('tbl_units');
+		$autoVoucherID=$this->Purchase_model->getMaxsuplierID();
+		$data['autoVoucherID']='KG-V-'.sprintf('%04d', $autoVoucherID['Auto_increment']);
+		
+		$maxSuplierID=$this->Suplier_model->getMaxsuplierID();
+		$data['maxid']='KG-S-'.sprintf('%03d', $maxSuplierID['Auto_increment']);
+		
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','moment/moment.js'),
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.js'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.js'),
+		$this->Gen->get_script_url('custom_js','purchase.js'),
+		$this->Gen->get_script_url('custom_js','jquery.validate.js'),
+		);
+		$data['view_css']=array(
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.css'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.css'),
+		);
+		// echo '<pre>';
+		// print_r($data['supplier']);
+		// exit;
+        $this->load_template('','addPurchase',$data);
+    }
+	public function add(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$this->title = "Add Purchase | ".$this->title;
+		$purchase=$this->Purchase_model->purchase_entry();
+
+		if (isset($_POST['add-purchase'])) {
+            redirect(base_url('Purchase/manage_purchase'));
+            
+        }
+		if (isset($_POST['add-purchase-another'])) {
+            redirect(base_url('Purchase'));
+            
+        }
+		
+	}
+	public function add_ajax(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$data=array();
+		$supplier=$this->Purchase_model->supplier_entry();
+		if($supplier){
+			$insert_id = $this->db->insert_id();
+			$data['supplier_id']=$insert_id;
+			$data['suppliers']=$this->Base_model->getAll('tbl_suppliers');
+			$res=array('responce'=>'success',"message"=>"Supplier added successfully.","data"=>$data);
+			echo json_encode($res);
+		}else{
+			$res=array('responce'=>'error',"message"=>"Supplier not added.something went wrong.");
+			echo json_encode($res);
+		}
+		
+	}
+	public function addPurchaseDraft(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$purchase=$this->Purchase_model->purchase_draft_entry();
+		echo json_encode($purchase);
+		
+	}
+	public function manage_purchase(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$this->title = "Manage Purchase | ".$this->title;
+		$data['purchases']=$this->Purchase_model->getAllPurchases();
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		);
+		$this->load_template('','manage_purchase',$data);
+	}
+	public function manage_drafts(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$this->title = "Manage Purchase Drafts | ".$this->title;
+		$data['purchases']=$this->Purchase_model->getAllDraftPurchases();
+		
+		// echo '<pre>';
+		// print_r($data['purchases']);exit;
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		);
+		$this->load_template('','manage_purchase_draft',$data);
+	}
+	
+	public function delete($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$responce=$this->Purchase_model->delete($id);
+        if($responce){
+			$this->session->set_userdata(array('success_message' => "Purchase deleted successfully"));
+			$this->output->set_header("Location: " . base_url() . 'Purchase/manage_purchase', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Purchase not deleted.Something went wrong"));
+			$this->output->set_header("Location: " . base_url() . 'Purchase/manage_purchase', TRUE, 302);
+		}
+	}	
+	public function deleteDraft($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$responce=$this->Purchase_model->deleteDraft($id);
+        if($responce){
+			$this->session->set_userdata(array('success_message' => "Purchase Draft deleted successfully"));
+			$this->output->set_header("Location: " . base_url() . 'Purchase/manage_drafts', TRUE, 302);
+		}else{
+			$this->session->set_userdata(array('error_message' => "Purchase Draft not deleted.Something went wrong"));
+			$this->output->set_header("Location: " . base_url() . 'Purchase/manage_drafts', TRUE, 302);
+		}
+	}
+	
+	public function edit($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+        $this->title = "Edit Purchase | ".$this->title;
+		$data['supplier']=$this->Base_model->getAll('tbl_suppliers');
+		$data['banks']=$this->Base_model->getAll('tbl_banks');
+		$data['category']=$this->Purchase_model->getAllProducts('tbl_category');
+		$data['locations']=$this->Base_model->getAll('tbl_locations');
+		$data['units']=$this->Base_model->getAll('tbl_units');
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','moment/moment.js'),
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.js'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.js'),
+		$this->Gen->get_script_url('custom_js','purchase.js'),
+		$this->Gen->get_script_url('custom_js','jquery.validate.js'),
+		);
+		$data['view_css']=array(
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.css'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.css'),
+		);
+		$data['purchase']=$this->Purchase_model->getPurchaseByID($id);
+		$maxSuplierID=$this->Suplier_model->getMaxsuplierID();
+		$data['maxid']='KG-S-'.sprintf('%03d', $maxSuplierID['Auto_increment']);
+		
+        $this->load_template('','editPurchase',$data);
+	}
+	public function editDraft($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+        $this->title = "Edit Purchase Draft| ".$this->title;
+		$data['supplier']=$this->Base_model->getAll('tbl_suppliers');
+		$data['banks']=$this->Base_model->getAll('tbl_banks');
+		$data['category']=$this->Purchase_model->getAllProducts('tbl_category');
+		$data['locations']=$this->Base_model->getAll('tbl_locations');
+		$data['units']=$this->Base_model->getAll('tbl_units');
+		$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','moment/moment.js'),
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.js'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.js'),
+		$this->Gen->get_script_url('custom_js','purchase.js'),
+		$this->Gen->get_script_url('custom_js','jquery.validate.js'),
+		);
+		$data['view_css']=array(
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.css'),
+		$this->Gen->get_script_url('plugin_components','select2/select2.min.css'),
+		);
+		$data['purchase']=$this->Purchase_model->getPurchaseDraftByID($id);
+		$maxSuplierID=$this->Suplier_model->getMaxsuplierID();
+		$data['maxid']='KG-S-'.sprintf('%03d', $maxSuplierID['Auto_increment']);
+		
+        $this->load_template('','editPurchaseDraft',$data);
+	}
+	public function update(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$purchase=$this->Purchase_model->purchase_update_entry();
+		if (isset($_POST['edit-purchase'])) {
+            redirect(base_url('Purchase/manage_purchase'));
+            
+        }
+		if (isset($_POST['add-purchase-another'])) {
+            redirect(base_url('Purchase'));
+            
+        }
+		
+	}
+	public function updatePurchaseDraft(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		
+		$purchase=$this->Purchase_model->purchase_draft_update_entry();
+		echo json_encode($purchase);
+		
+	}
+	public function detail($id){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+        $this->title = "Purchase Details | ".$this->title;
+		$data['purchase']=$this->Purchase_model->getPurchaseByID($id);
+		
+        $this->load_template('','ViewPurchase',$data);
+	}
+	public function purchReport(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$this->title = "Purchase Report | ".$this->title;
+			$data['view_scripts']=array(
+		$this->Gen->get_script_url('plugin_components','moment/moment.js'),
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/jquery.dataTables.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.bootstrap4.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/dataTables.buttons.min.js'),
+		$this->Gen->get_script_url('plugin_components','datatables/buttons.bootstrap4.min.js'),
+		$this->Gen->get_script_url('bower_components','jquery.datatable.init.js'),
+		$this->Gen->get_script_url('custom_js','purchase.js'),
+		$this->Gen->get_script_url('custom_js','jquery.validate.js'),
+		);
+		$data['view_css']=array(
+		$this->Gen->get_script_url('plugin_components','daterangepicker/daterangepicker.css'),
+		);
+		$this->load_template('','purchase_report',$data);
+	}
+	public function filter(){
+		if (!$this->auth->is_logged()) {
+			$this->output->set_header("Location: " . base_url('Adminlogin'), TRUE, 302);
+		}
+		$data['purchase']=$purchase=$this->Purchase_model->purchase_filter();
+		$data['filter_type']=$this->input->post('filter_type');
+		$count=count($purchase);
+		$html=$this->load->view('purchase_filter',$data,true);
+		// echo '<pre>';
+		// print_r($data['purchase']);
+		// exit;
+		echo json_encode(array("html"=>$html,'count'=>$count));
+		
+	}
+	
+}

@@ -1,0 +1,21 @@
+<?php
+
+if (!defined('BASEPATH'))
+    exit('No direct script access allowed');
+
+class Suplier_model extends CI_Model {
+
+    public function __construct() {
+        parent::__construct();
+    }
+
+    function getMaxsuplierID() {
+		$sql="SHOW TABLE STATUS LIKE 'tbl_suppliers'";
+		return $this->db->query($sql)->row_array();
+        // $this->db->select('Max(fld_id) as maxid');
+       // return $this->db->get('tbl_suppliers')->row_array();
+        
+    }
+    
+   
+}

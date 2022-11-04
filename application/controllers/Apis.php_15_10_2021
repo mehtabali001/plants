@@ -1,0 +1,270 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class Apis extends My_controller {
+	
+	function __construct() {
+        parent::__construct();
+		$this->load->model('Apis_model');
+		$this->load->model('Common_model');
+    }
+	
+	public function do_login() {
+	
+		//$this->form_validation->set_rules('emailadd', 'Email', 'required');
+		$this->form_validation->set_rules('username', 'Email / Username', 'required');
+		$this->form_validation->set_message('password', 'Password', 'required');
+        $error="";
+		$responce=array();
+		if ($this->form_validation->run() == FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+		} else {
+			$email = $this->input->post('username',TRUE);
+			//$email = $this->input->post('emailadd',TRUE);
+            $password = $this->input->post('password',TRUE);
+			if(filter_var($email, FILTER_VALIDATE_EMAIL)) {
+				$isemail = $email;
+				//return true;
+                //echo $isemail;exit;				
+			}else {
+				$isUsename = $email;
+				//echo $isUsename;exit;
+			}
+			
+			if(isset($isemail)){
+				$getqry = $this->db->query("SELECT * FROM tbl_users WHERE fld_email = '".$isemail."' AND fld_password = '".md5("kotal" . $password)."'")->row();
+			
+				if(empty ($getqry) || $getqry->fld_email != $isemail || $getqry->fld_password != md5("kotal" . $password)){
+				//if ($email == '' || $password == '' || $this->auth->login($email, $password) === FALSE) {
+					$error = "Email or password incorrect.";
+					
+				}
+			}else{
+				$getqry = $this->db->query("SELECT * FROM tbl_users WHERE fld_username = '".$isUsename."'  AND fld_password = '".md5("kotal" . $password)."'")->row();
+				if(empty ($getqry) || $getqry->fld_username != $isUsename || $getqry->fld_password != md5("kotal" . $password)){
+				//if ($email == '' || $password == '' || $this->auth->login($email, $password) === FALSE) {
+					$error = "Email or password incorrect.";
+				}
+			}
+			
+			
+			
+			
+            if ($error != '') {
+				
+				$this->send_response(500,'error',320, 'The Entered email or password is incorrect.');
+            } else {
+                
+                if($email == 'Superadmin' || $email == 'superadmin@kotalgas.com' ){
+    			    $responce=$this->auth_login($email, $password);
+					
+					$this->send_response(200,'success',332,'Login successfully.',$responce);
+					
+    			}else{
+				
+				$user_data = array(
+					'fld_email'        => $getqry->fld_email,
+					'fld_username'        => $getqry->fld_username,
+					'password' 		   => $password,
+                );
+               // $this->session->set_userdata($user_data);
+				$this->load->library('phpmailer');
+				//$getcode = $this->db->query("SELECT fld_username FROM tbl_users WHERE fld_email = '".$this->session->userdata('fld_email')."'")->row();
+				
+    		    $display_name = $getqry->fld_username;
+				//$data['emailaddress'] = $this->session->userdata('fld_email');
+				$username =$user_data['fld_username'];
+      			$email = $user_data['fld_email'];
+				$password = $user_data['password'];
+    //  		Generte OTP
+	            $code = rand(1000,9999);
+			    
+			    $update = $this->db->query("UPDATE tbl_users SET fld_OTP = '".$code."' WHERE fld_email = '".$email."' OR fld_username = '".$username."'");
+			    
+			    if($update){
+			    $email_temp = $this->db->query("SELECT * FROM tbl_email WHERE fld_id = '6'")->row();
+			    
+			    $message = $email_temp->fld_email_body;
+			    $message = str_replace('{OTP}', $code, $message);
+			    
+			    $message = str_replace('{user_name}', $username, $message);
+                	
+    			$support_email = $email;
+    	
+    			$this->phpmailer->IsMail();     
+     			$this->phpmailer->From   =   'noreply@mktechsol.com';
+     			$this->phpmailer->FromName  =  "H.Q. OFFICE";
+    			$this->phpmailer->IsHTML(true);
+     			$this->phpmailer->AddAddress($email); 
+     			$this->phpmailer->Subject  =   $email_temp->fld_subject;
+     			$this->phpmailer->Body  =   nl2br($message);
+     			$this->phpmailer->Send();
+     			$this->phpmailer->ClearAddresses();
+				
+                //$this->output->set_header("Location: " . base_url('home'), TRUE, 302);
+				//$this->output->set_header("Location: " . base_url() . 'Adminlogin/login_otp', TRUE, 302);
+				$this->send_response(200,'success',332,'OTP send to your email address.',$user_data);
+				}
+			}
+            }
+		}		
+	}
+	public function do_verifylogin(){
+		$this->form_validation->set_rules('code[]', 'OTP Code', 'required');
+		$fld_email=$this->input->post('fld_email',TRUE);
+		$fld_username=$this->input->post('fld_username',TRUE);
+		$password=$this->input->post('password',TRUE);
+		$error="";
+		
+		if ($this->form_validation->run() == FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+		} else {
+			$code = implode('',$this->input->post('code'));
+			
+			$getcode = $this->db->query("SELECT fld_OTP FROM tbl_users WHERE fld_email = '".$fld_email."' OR fld_username = '".$fld_username."'")->row();
+			$otp = $getcode->fld_OTP;
+			$email = $fld_email;
+			$password = $password;
+			//echo $email."<br>";
+			//echo $password;exit;
+			if($code == $otp ){
+				$responce=$this->auth_login($email, $password);
+				if(is_array($responce) && !empty($responce)){
+					$this->send_response(200,'success',332,'Login successfully.',$responce);
+				}else{
+					$this->send_response(500,'error',320, 'Invalid OTP Code. Try Again');
+				}
+			}else{
+				$this->send_response(500,'error',320, 'Invalid OTP Code. Try Again');
+			}
+		}
+	}
+	
+	public function auth_login($email,$password)
+    {
+        
+        $this->load->model('Users');
+        $this->load->model('Common_model');
+        $result = $this->Users->check_valid_user($email,$password);
+		
+       
+
+        if ($result)
+        {
+            $key = md5(time());
+            $key = str_replace("1", "z", $key);
+            $key = str_replace("2", "J", $key);
+            $key = str_replace("3", "y", $key);
+            $key = str_replace("4", "R", $key);
+            $key = str_replace("5", "Kd", $key);
+            $key = str_replace("6", "jX", $key);
+            $key = str_replace("7", "dH", $key);
+            $key = str_replace("8", "p", $key);
+            $key = str_replace("9", "Uf", $key);
+            $key = str_replace("0", "eXnyiKFj", $key);
+            $sid_web = substr($key, rand(0, 3), rand(28, 32));
+            
+            
+			$getpermissions = $this->Common_model->select_where_return_row('*','tbl_roles',array('role_id'=>$result[0]['fld_role']));
+			$getempid = $this->Common_model->select_where_return_row('*','tbl_users',array('emp_id'=>$result[0]['emp_id']));
+			$empactivestatus = $getempid->emp_id;
+			
+			
+			$permissions = $getpermissions->perm_issions;
+        			$mainmenu = $getpermissions->admin_menu;
+        			$sublevel = $getpermissions->admin_menu_sublevel;
+        			$sublevellinks = $getpermissions->admin_menu_group;
+                    
+                            
+                    $user_data = array(
+                        'sid_web'           => $sid_web,
+                        'isLogIn'           => true,
+                        'isAdmin'           => (($result[0]['fld_user_type'] == 1)?true:false),
+                        'user_id'           => $result[0]['fld_id'],
+                        'user_type'         => $result[0]['fld_user_type'],
+                        'user_name'        => $result[0]['fld_username'],
+                        'fld_email'         => $result[0]['fld_email'],
+                        'user_otp'          => $result[0]['fld_OTP'],
+                        'user_role'         => $result[0]['fld_role'],
+                        'emp_id'            => $result[0]['emp_id'],
+        				'mainmenu'          => $mainmenu,
+        				'sublevel'          => $sublevel,
+        				'sublevellinks'     => $sublevellinks,
+        				'permissions'       => $permissions,
+                    
+                    );
+			
+			if($empactivestatus == 0){
+				
+                return  $user_data;
+			}elseif($empactivestatus > 0){
+			    
+			    
+                
+                $getemployeestatus =	$this->Common_model->select_single_field('is_active','tbl_employees',array('email'=>$email));
+ 
+                if($getemployeestatus == 1){
+                   
+                    return  $user_data;
+			    }else{
+			        
+			        return FALSE;   
+			    }
+		}
+        }else{
+            return FALSE;
+        }
+    }
+    public function submit_forgot() {
+		$this->form_validation->set_rules('email', 'Email Address', 'required');
+		if ($this->form_validation->run() == FALSE) {
+			$this->send_response(500,'error',500, strip_tags(validation_errors()));
+		} else {
+		    
+			$email = $this->input->post('email',TRUE);
+			$qry = $this->db->query("SELECT * FROM tbl_users WHERE fld_email = '".$email."'")->row();
+			if(!empty($qry->fld_email)){
+			$string_length 		= 	substr((md5(uniqid(rand(), 1))), 0,30);
+			$activation_link  	=	'<a href="'.base_url().'Adminlogin/Change_pass/'.$qry->fld_id.'">'.base_url().'Adminlogin/Change_pass/'.$qry->fld_id.'</a>';
+                
+    			$message   =   "Please Click on the below link to reset your password"."\n";
+    			$message  .=   "Link: ".$activation_link."\n";
+			    $message  .=   "Thanks!";
+
+    		 // $support_email = settings('support_email'); 
+    			$support_email = $email;
+				$this->load->library('phpmailer');
+    			$this->phpmailer->IsMail();     
+    			$this->phpmailer->From   =   $support_email;
+    			$this->phpmailer->FromName  =  "Kotal ERP System";
+    			$this->phpmailer->IsHTML(true);
+    			$this->phpmailer->AddAddress($support_email); 
+    			$this->phpmailer->Subject  =   "Kotal ERP System";
+    			$this->phpmailer->Body  =   nl2br($message);
+    			$this->phpmailer->Send();
+    			$this->phpmailer->ClearAddresses();
+    			
+				$this->send_response(200,'success',332,'Please check your email Inbox or Spam/Junk folder to choose your new password.');
+    			
+			}else{
+			    
+				$this->send_response(500,'error',500, 'Invalid Email!, Please enter your correct email address.');
+			}
+		}
+	}
+	public function send_response($header_status, $type, $status, $message, $data = array()) {
+        return $this->output
+        ->set_content_type('application/json')
+        ->set_status_header($header_status)
+        ->set_output(json_encode(array(
+            'type' => $type,
+            'status' => $status,
+            'message' => $message,
+            'data' => $data
+        )));
+    }
+ 
+}
+	
+	
+	

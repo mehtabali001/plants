@@ -1,0 +1,470 @@
+<?php
+
+if (!defined('BASEPATH'))
+    exit('No direct script access allowed');
+
+class Navigations_model extends CI_Model {
+
+    public function __construct() {
+        parent::__construct();
+    }
+
+    function getMaxID() {
+		$sql="SHOW TABLE STATUS LIKE 'tbl_navigations'";
+		return $this->db->query($sql)->row_array();
+        
+    }
+	function getAllProducts() {
+		
+		$this->db->select('tbl_category.*,tbl_units.fld_unit');
+		
+		$this->db->from('tbl_category');
+		
+		$this->db->join('tbl_units','tbl_units.fld_id=tbl_category.fld_unit','left');
+		
+		return $this->db->get()->result_array();
+        
+    }
+	
+   function navigation_entry(){
+		$user_id=$this->session->userdata('user_id');
+		$data = array(
+            'fld_userid'        => $user_id,
+            'fld_stock_loc_id'        => 0,
+            //'fld_stock_loc_id'        => $this->input->post('stock_location_id',TRUE),
+            'fld_nav_type'        => $this->input->post('navigation_type',TRUE),
+            'fld_received_by'          => $this->input->post('fld_received_by',TRUE),
+            'fld_remarks'        => $this->input->post('fld_remarks',TRUE),
+            'fld_date' => date('Y-m-d',strtotime($this->input->post('fld_navigation_date',TRUE))),
+            'fld_freight_MT'     => $this->input->post('fld_freight_rate',TRUE),
+            'fld_freight_amount'      => $this->input->post('fld_freight_amount',TRUE),
+            'fld_bowser'      => $this->input->post('fld_bowser',TRUE),
+            'fld_quantity'   => $this->input->post('fld_quantity',TRUE),
+            'fld_weight'        => $this->input->post('fld_weight',TRUE),
+            'fld_total_amount'         => $this->input->post('fld_grand_total',TRUE),
+            'fld_item_id'         => $this->input->post('fld_item',TRUE),
+            'fld_location_from'         => $this->input->post('fld_location_from',TRUE),
+            'fld_shipment_from'         => $this->input->post('fld_shipment_from',TRUE),
+            'fld_qty'         => $this->input->post('fld_item_qty',TRUE),
+            'fld_item_weight'         => $this->input->post('fld_item_weight',TRUE),
+            'fld_location_to'         => $this->input->post('fld_location_to',TRUE),
+            'fld_shipment_to'         => $this->input->post('fld_shipment_to',TRUE),
+            'fld_amount'         => $this->input->post('fld_amount',TRUE),
+            'fld_rate'         => $this->input->post('fld_rate',TRUE),
+        );
+		 $responce=$this->db->insert('tbl_navigations', $data);
+		 if($responce){
+			 $navigation_id = $this->db->insert_id();
+			 $stock_loc = array(
+                'fld_purchase_location_id'=> $this->input->post('fld_location_to',TRUE),
+                'fld_parent_id'        => $this->input->post('stock_location_id',TRUE),
+                'fld_purch_type'         => 2,
+                'fld_purchase_id'           => $this->input->post('purchase_id',TRUE),
+            );
+			
+           $this->db->insert('tbl_stock_locations', $stock_loc); 
+		   $stock_loc_id = $this->db->insert_id();
+		   
+		   $stock = array(
+                'fld_stock_loc_id'=> $stock_loc_id,
+                'fld_stock_qty'        => $this->input->post('fld_item_qty',TRUE),
+            );
+
+           $this->db->insert('tbl_stocks', $stock);
+		   
+		   $this->db->where('fld_id',$navigation_id);
+		   $this->db->update('tbl_navigations', array("fld_stock_loc_id"=>$stock_loc_id));
+		 /* $move_stock_loc_id = $this->input->post('stock_location_id',TRUE);
+		  $move_stock_loc_qty = $this->input->post('fld_item_qty',TRUE);
+		  $query="update tbl_stocks set fld_stock_qty=fld_stock_qty-".$move_stock_loc_qty." where fld_stock_loc_id=".$move_stock_loc_id."";
+		  $this->db->where('fld_stock_loc_id',$move_stock_loc_id);
+		  $this->db->update('tbl_stocks',array('fld_stock_qty'=>"fld_stock_qty" - $move_stock_loc_qty));
+		  $this->db->query($query);*/
+		$this->session->set_userdata('success_message', "Navigation added successfully.");
+		return true;
+		}else{
+		$this->session->set_userdata('success_message', "Navigation not added.");
+			return false; 
+		}
+	}
+	function navigation_update_entry(){
+		$user_id=$this->session->userdata('user_id');
+		$navigation_id=$this->input->post('navigation_id',TRUE);
+		$stock_location_id=$this->input->post('stock_location_id',TRUE);
+		$data = array(
+            'fld_received_by'          => $this->input->post('fld_received_by',TRUE),
+            'fld_remarks'        => $this->input->post('fld_remarks',TRUE),
+            'fld_date' => date('Y-m-d',strtotime($this->input->post('fld_navigation_date',TRUE))),
+            'fld_freight_MT'     => $this->input->post('fld_freight_rate',TRUE),
+            'fld_freight_amount'      => $this->input->post('fld_freight_amount',TRUE),
+            'fld_bowser'      => $this->input->post('fld_bowser',TRUE),
+            'fld_quantity'   => $this->input->post('fld_quantity',TRUE),
+            'fld_weight'        => $this->input->post('fld_weight',TRUE),
+            'fld_total_amount'         => $this->input->post('fld_grand_total',TRUE),
+            'fld_item_id'         => $this->input->post('fld_item',TRUE),
+            'fld_location_from'         => $this->input->post('fld_location_from',TRUE),
+            'fld_shipment_from'         => $this->input->post('fld_shipment_from',TRUE),
+            'fld_qty'         => $this->input->post('fld_item_qty',TRUE),
+            'fld_item_weight'         => $this->input->post('fld_item_weight',TRUE),
+            'fld_location_to'         => $this->input->post('fld_location_to',TRUE),
+            'fld_shipment_to'         => $this->input->post('fld_shipment_to',TRUE),
+            'fld_amount'         => $this->input->post('fld_amount',TRUE),
+            'fld_rate'         => $this->input->post('fld_rate',TRUE),
+        );
+		 $this->db->where('fld_id',$navigation_id);
+		 $responce=$this->db->update('tbl_navigations', $data);
+		 if($responce){
+		  $stock_loc = array(
+                'fld_purchase_location_id'=> $this->input->post('fld_location_to',TRUE)
+            );
+		   $this->db->where('fld_id',$stock_location_id);
+           $this->db->update('tbl_stock_locations', $stock_loc);  
+		   $stock = array(
+                'fld_stock_qty'        => $this->input->post('fld_item_qty',TRUE),
+            );
+			
+		   $this->db->where('fld_stock_loc_id',$stock_location_id);
+           $this->db->update('tbl_stocks', $stock);
+		
+		$this->session->set_userdata('success_message', "Navigation updated successfully.");
+		return true;
+		}else{
+		$this->session->set_userdata('success_message', "Navigation not updated.");
+			return false; 
+		}
+	}
+	function getAllNavigations(){
+		$this->db->select('tbl_navigations.*,tbl_category.fld_category,from.fld_location as location_from,to.fld_location as location_to');
+		
+		$this->db->from('tbl_navigations');
+		
+		$this->db->join('tbl_category','tbl_category.fld_id=tbl_navigations.fld_item_id','left');
+		
+		$this->db->join('tbl_locations as from','from.fld_id=tbl_navigations.fld_location_from','left');
+		
+		$this->db->join('tbl_locations as to','to.fld_id=tbl_navigations.fld_location_to','left');
+		
+		$nevigation=$this->db->get()->result_array();
+		
+		return $nevigation;
+	}
+	function getNavigationByID($id){
+		$this->db->select('tbl_navigations.*,tbl_category.fld_category,tbl_stock_locations.fld_parent_id');
+		
+		$this->db->from('tbl_navigations');
+		
+		$this->db->join('tbl_category','tbl_category.fld_id=tbl_navigations.fld_item_id','left');
+		
+		$this->db->join('tbl_stock_locations','tbl_stock_locations.fld_id=tbl_navigations.fld_stock_loc_id');
+		
+		$this->db->where('tbl_navigations.fld_id',$id);
+		
+		$nevigation=$this->db->get()->row_array();
+		// echo '<pre>';
+		// print_r($nevigation);
+		
+		if($nevigation){
+				$nav_qty=$this->getNavigateQty($nevigation['fld_parent_id'],$id);
+				//echo $this->db->last_query();
+				$orignal_qty=$this->getOrignalQty($nevigation['fld_parent_id']);
+				
+				// echo $nav_qty;
+				// echo '<br>';
+				// echo $orignal_qty;
+				// exit;
+				$nevigation['orrignal_qty']=$orignal_qty - $nav_qty;		
+		}
+		return $nevigation;
+	}
+	function getNavigateQty($id,$nav_id=""){
+		$qty=0;
+		$this->db->select('sum(tbl_navigations.fld_qty) as qty');
+		
+		$this->db->from('tbl_navigations');
+		
+		//$this->db->where('tbl_navigations.fld_stock_loc_id',$id);
+		
+		$this->db->where('tbl_navigations.fld_stock_loc_id IN (SELECT `fld_id` FROM `tbl_stock_locations` where fld_parent_id ='.$id.')', NULL, FALSE);
+		if($nav_id != ""){
+		$this->db->where('tbl_navigations.fld_id !=',$nav_id);
+		}
+		
+		$res=$this->db->get()->row_array();
+		if($res['qty']){
+			$qty=$res['qty'];
+			return $qty;
+		}else{
+			return $qty;
+		}
+		
+	}
+	function getOrignalQty($id){
+		$qty=0;
+		
+		$this->db->select('sum(tbl_stocks.fld_stock_qty) as qty');
+		
+		$this->db->from('tbl_stock_locations');
+		
+		$this->db->join('tbl_stocks','tbl_stocks.fld_stock_loc_id=tbl_stock_locations.fld_id');
+		
+		$this->db->where('tbl_stock_locations.fld_id',$id);
+		
+		$res=$this->db->get()->row_array();
+		
+		if($res['qty']){
+			$qty=$res['qty'];
+			return (int)$qty;
+		}else{
+			return $qty;
+		}
+		
+	}
+	/*function getOrignalQty($id){
+		$qty=0;
+		$this->db->select('sum(tbl_purchase_detail.fld_quantity) as qty');
+		
+		$this->db->from('tbl_purchase');
+		
+		$this->db->join('tbl_purchase_detail','tbl_purchase_detail.fld_purchase_id=tbl_purchase.fld_purchase_id');
+		
+		$this->db->where('tbl_purchase.fld_id',$id);
+		
+		$res=$this->db->get()->row_array();
+		if($res['qty']){
+			$qty=$res['qty'];
+			return (int)$qty;
+		}else{
+			return $qty;
+		}
+		
+	}*/
+	
+	function getItems($id){
+		
+		$this->db->select('tbl_navigations_items.*,tbl_category.fld_category,from.fld_location as location_from,to.fld_location as location_to');
+		
+		$this->db->from('tbl_navigations_items');
+		
+		$this->db->join('tbl_category','tbl_category.fld_id=tbl_navigations_items.fld_item_id','left');
+		
+		$this->db->join('tbl_locations as from','from.fld_id=tbl_navigations_items.fld_location_from','left');
+		
+		$this->db->join('tbl_locations as to','to.fld_id=tbl_navigations_items.fld_location_to','left');
+		
+		$this->db->where('fld_navigation_id',$id);
+		
+		return $this->db->get()->result_array();
+	}
+	function delete($id){
+		$this->db->where('fld_id',$id);
+		$navigation=$this->db->delete('tbl_navigations');
+		if($navigation){
+			$this->db->where('fld_navigation_id',$id);
+			return $this->db->delete('tbl_navigations_items');
+		}
+	}
+	
+	function getPurchaseByID($id) {
+		
+		$this->db->select('tbl_purchase.*,tbl_suppliers.fld_supplier_name,tbl_locations.fld_location,tbl_locations.fld_address');
+		
+		$this->db->from('tbl_purchase');
+		
+		$this->db->join('tbl_suppliers','tbl_suppliers.fld_id=tbl_purchase.fld_supplier_id');
+		
+		$this->db->join('tbl_locations','tbl_locations.fld_id=tbl_purchase.fld_location_id','left');
+		
+		$this->db->where('tbl_purchase.fld_id',$id);
+		
+		$record=$this->db->get()->row_array();
+		
+		if($record){
+			foreach($record as $key => $rec){
+				$quantity=$this->getPurchaseNavigation($record['fld_id']);
+				$products=$this->getPurchaseProducts($record['fld_id']);
+				foreach($products as $pkey => $prod){
+					$products[$pkey]['fld_quantity']=(int)$prod['fld_quantity'] - $quantity;
+				}
+				
+				$record['products']=$products;
+				
+			}
+		}
+		// echo '<pre>';
+		// print_r($record);
+		// exit;
+		return $record;
+        
+    }
+	function getPurchaseProducts($id){
+		
+		$this->db->select('tbl_purchase_detail.*,tbl_category.*');
+		
+		$this->db->from('tbl_purchase_detail');
+		
+		$this->db->join('tbl_category','tbl_category.fld_id=tbl_purchase_detail.fld_product_id');
+		
+		$this->db->where('tbl_purchase_detail.fld_purchase_id',$id);
+		
+		return $this->db->get()->result_array();
+	}
+	function getPurchaseNavigation($id){
+		$qty=0;
+		$this->db->select('sum(tbl_navigations.fld_qty) as qty');
+		
+		$this->db->from('tbl_navigations');
+		
+		//$this->db->where_in('tbl_navigations.fld_stock_loc_id',(''));
+		$this->db->where('tbl_navigations.fld_stock_loc_id IN (SELECT `fld_id` FROM `tbl_stock_locations` where fld_parent_id ='.$id.')', NULL, FALSE);
+		
+		//$this->db->where('tbl_navigations.fld_nav_type',1);
+		
+		$res=$this->db->get()->row_array();
+		if($res['qty']){
+			$qty=$res['qty'];
+			return $qty;
+		}else{
+			return $qty;
+		}
+	}
+	function getAllPurchases() {
+		
+		$this->db->select('tbl_purchase.*,tbl_suppliers.*,tbl_purchase_detail.*');
+		
+		$this->db->from('tbl_purchase');
+		
+		$this->db->join('tbl_suppliers','tbl_suppliers.fld_id=tbl_purchase.fld_supplier_id');
+		
+		$this->db->join('tbl_purchase_detail','tbl_purchase_detail.fld_purchase_id=tbl_purchase.fld_id');
+		
+		$purchases=$this->db->get()->result_array();
+		foreach($purchases as $key => $purch){
+			$qty=$this->getPurchaseNavigation($purch['fld_id']);
+			if($qty >= (int)$purch['fld_quantity']){
+				unset($purchases[$key]);
+			}
+		}
+		return array_values($purchases);
+        
+    }
+	
+	/*--------------------------Navigation Functions --------------------*/
+	function getAllInTransitPurch() {
+		
+		$this->db->select('tbl_stock_locations.*,tbl_stocks.fld_stock_qty,tbl_purchase.fld_grand_total_amount,tbl_purchase.fld_invoice_no,tbl_suppliers.fld_supplier_name');
+		
+		$this->db->from('tbl_stock_locations');
+		
+		$this->db->join('tbl_purchase','tbl_purchase.fld_id=tbl_stock_locations.fld_purchase_id');
+		
+		$this->db->join('tbl_stocks','tbl_stocks.fld_stock_loc_id=tbl_stock_locations.fld_id');
+		
+		$this->db->join('tbl_suppliers','tbl_suppliers.fld_id=tbl_purchase.fld_supplier_id');
+		
+		$this->db->join('tbl_purchase_detail','tbl_purchase_detail.fld_purchase_id=tbl_purchase.fld_id');
+		
+		$this->db->where('tbl_stock_locations.fld_purchase_location_id',4);
+		
+		$this->db->where('tbl_stocks.fld_stock_qty >',0);
+		
+		$purchases=$this->db->get()->result_array();
+		foreach($purchases as $key => $purch){
+			$qty=$this->getPurchaseNavigation($purch['fld_id']);
+			if($qty >= (int)$purch['fld_stock_qty']){
+				unset($purchases[$key]);
+			}
+		}
+		return array_values($purchases); 
+    }
+	function getInTranPurchByID($id) {
+		
+		$this->db->select('tbl_stock_locations.*,tbl_stocks.fld_stock_qty,tbl_suppliers.fld_supplier_name,pd.fld_product_id,pd.fld_quantity,pd.fld_unit_price,pd.fld_total_amount,tbl_category.fld_category,tbl_purchase.fld_shipment');
+		
+		$this->db->from('tbl_stock_locations');
+		
+		$this->db->join('tbl_purchase','tbl_purchase.fld_id=tbl_stock_locations.fld_purchase_id');
+		
+		$this->db->join('tbl_stocks','tbl_stocks.fld_stock_loc_id=tbl_stock_locations.fld_id');
+		
+		$this->db->join('tbl_suppliers','tbl_suppliers.fld_id=tbl_purchase.fld_supplier_id');
+		
+		$this->db->join('tbl_purchase_detail as pd','pd.fld_purchase_id=tbl_purchase.fld_id');
+		
+		$this->db->join('tbl_category','tbl_category.fld_id=pd.fld_product_id');
+		
+		$this->db->where('tbl_stock_locations.fld_id',$id);
+		
+		$navigation=$this->db->get()->row_array();
+		
+		if($navigation){
+			$qty=$this->getPurchaseNavigation($navigation['fld_id']);
+			// echo '<pre>';
+		// print_r($this->db->last_query());
+		// print_r($qty);
+		// exit;
+			$navigation['fld_stock_qty']=$navigation['fld_stock_qty'] - $qty;
+		}
+		return $navigation;
+        
+    }
+	function getShipments($location) {
+		
+		$this->db->select('tbl_stock_locations.*,tbl_stocks.fld_stock_qty,tbl_suppliers.fld_supplier_name,pd.fld_product_id,pd.fld_quantity,pd.fld_unit_price,pd.fld_total_amount,tbl_category.fld_category,tbl_purchase.fld_shipment');
+		
+		$this->db->from('tbl_stock_locations');
+		
+		$this->db->join('tbl_purchase','tbl_purchase.fld_id=tbl_stock_locations.fld_purchase_id');
+		
+		$this->db->join('tbl_stocks','tbl_stocks.fld_stock_loc_id=tbl_stock_locations.fld_id');
+		
+		$this->db->join('tbl_suppliers','tbl_suppliers.fld_id=tbl_purchase.fld_supplier_id');
+		
+		$this->db->join('tbl_purchase_detail as pd','pd.fld_purchase_id=tbl_purchase.fld_id');
+		
+		$this->db->join('tbl_category','tbl_category.fld_id=pd.fld_product_id');
+		
+		$this->db->where('tbl_stock_locations.fld_purchase_location_id',$location);
+		
+		$navigation=$this->db->get()->result_array();
+		if($navigation){
+			foreach($navigation as $key => $nav){
+			$qty=$this->getPurchaseNavigation($nav['fld_id']);
+			$navigation[$key]['fld_stock_qty']=$fld_stock_qty=$navigation[$key]['fld_stock_qty'] - $qty;
+				if($fld_stock_qty <= 0){
+					unset($navigation[$key]);
+				}
+			}
+		}
+		return array_values($navigation);
+        
+    }
+	function ShipmentByID($ship_id) {
+		
+		$this->db->select('tbl_stock_locations.*,tbl_stocks.fld_stock_qty,tbl_suppliers.fld_supplier_name,pd.fld_product_id,pd.fld_quantity,pd.fld_unit_price,pd.fld_total_amount,tbl_category.fld_category,tbl_purchase.fld_shipment');
+		
+		$this->db->from('tbl_stock_locations');
+		
+		$this->db->join('tbl_purchase','tbl_purchase.fld_id=tbl_stock_locations.fld_purchase_id');
+		
+		$this->db->join('tbl_stocks','tbl_stocks.fld_stock_loc_id=tbl_stock_locations.fld_id');
+		
+		$this->db->join('tbl_suppliers','tbl_suppliers.fld_id=tbl_purchase.fld_supplier_id');
+		
+		$this->db->join('tbl_purchase_detail as pd','pd.fld_purchase_id=tbl_purchase.fld_id');
+		
+		$this->db->join('tbl_category','tbl_category.fld_id=pd.fld_product_id');
+		
+		$this->db->where('tbl_stock_locations.fld_id',$ship_id);
+		
+		$navigation=$this->db->get()->row_array();
+		if($navigation){
+			//foreach($navigation as $key => $nav){
+			$qty=$this->getPurchaseNavigation($navigation['fld_id']);
+			$navigation['fld_stock_qty']=$navigation['fld_stock_qty'] - $qty;
+			//}
+		}
+		return $navigation;
+        
+    }
+   
+}
